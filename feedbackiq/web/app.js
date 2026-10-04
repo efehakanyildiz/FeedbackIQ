@@ -528,36 +528,192 @@ async function loadCaseDetail(caseId) {
   }
 }
 
+const CLINICAL_DEPARTMENTS = [
+  "Ortopedi",
+  "Kardiyoloji",
+  "Göz",
+  "Dahiliye",
+  "Çocuk Sağlığı ve Hastalıkları",
+  "Radyoloji",
+  "Biyokimya Laboratuvarı",
+  "Acil Servis",
+  "Vezne ve Muhasebe",
+  "Hasta Kabul ve Kayıt",
+  "Nöroloji",
+  "Genel Cerrahi",
+  "Kulak Burun Boğaz (KBB)",
+  "Fizik Tedavi ve Rehabilitasyon",
+  "Üroloji",
+  "Cildiye (Dermatoloji)",
+  "Göğüs Hastalıkları",
+  "Kadın Hastalıkları ve Doğum",
+  "Ağız ve Diş Sağlığı",
+  "Beslenme ve Diyet"
+];
+
+const HOSPITAL_OPTIONS = [
+  "Merkez Şehir Hastanesi",
+  "Anadolu Şehir Hastanesi",
+  "Kadıköy Tıp Merkezi",
+  "Şişli Sağlık Merkezi",
+  "Çamlıca Tıp Merkezi",
+  "Bakırköy Polikliniği",
+  "Kartal Tıp Merkezi",
+  "Levent Sağlık Kompleksi"
+];
+
+const SERVICE_TYPE_OPTIONS = [
+  "Poliklinik Muayenesi",
+  "Kan Tahlili / Laboratuvar",
+  "Radyoloji / Görüntüleme (MR, Tomografi, Eko)",
+  "Ameliyat / Cerrahi Müdahale",
+  "Hasta Kayıt / Giriş İşlemi",
+  "Vezne / Fatura Tahsilatı",
+  "Klinik Servis / Yatan Hasta",
+  "Reçete / Rapor Onayı",
+  "Acil Müdahale"
+];
+
+const STAFF_ROLE_OPTIONS = [
+  "Doktor",
+  "Hemşire",
+  "Tıbbi Sekreter",
+  "Hasta Kayıt Görevlisi",
+  "Vezne Görevlisi",
+  "Laborant / Teknisyen",
+  "Güvenlik Görevlisi",
+  "Temizlik / Kat Görevlisi",
+  "Hasta Hakları Temsilcisi"
+];
+
+function extractTimeForInput(timeStr) {
+  if (!timeStr) return "";
+  const match = timeStr.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  if (match) {
+    let h = match[1];
+    if (h.length === 1) h = "0" + h;
+    return `${h}:${match[2]}`;
+  }
+  return "";
+}
+
+function extractDateForInput(dateStr) {
+  if (!dateStr) return "";
+  const match = dateStr.match(/\b\d{4}-\d{2}-\d{2}\b/);
+  if (match) return match[0];
+  const lower = dateStr.toLowerCase();
+  const today = new Date();
+  if (lower.includes("bugün") || lower.includes("today")) {
+    return today.toISOString().split("T")[0];
+  }
+  if (lower.includes("dün") || lower.includes("yesterday")) {
+    const yest = new Date(today);
+    yest.setDate(yest.getDate() - 1);
+    return yest.toISOString().split("T")[0];
+  }
+  return "";
+}
+
+function buildSelectOptions(optionsList, selectedVal, placeholder, allowCustom = true) {
+  let html = `<option value="">${placeholder}</option>`;
+  let matched = false;
+  const sLower = (selectedVal || "").toLowerCase().trim();
+
+  optionsList.forEach(opt => {
+    const isSel = sLower && (sLower === opt.toLowerCase() || sLower.includes(opt.toLowerCase()) || opt.toLowerCase().includes(sLower));
+    if (isSel && !matched) {
+      html += `<option value="${opt}" selected>${opt}</option>`;
+      matched = true;
+    } else {
+      html += `<option value="${opt}">${opt}</option>`;
+    }
+  });
+
+  if (selectedVal && !matched && selectedVal.trim()) {
+    html += `<option value="${selectedVal}" selected>${selectedVal}</option>`;
+  }
+
+  if (allowCustom) {
+    html += `<option value="__custom__">Farklı / Özel Değer Girin...</option>`;
+  }
+  return html;
+}
+
+window.setCsrTime = function(t) {
+  const el = document.getElementById("csrTime");
+  if (el) el.value = t;
+};
+
+window.setCsrDate = function(type) {
+  const el = document.getElementById("csrDate");
+  if (!el) return;
+  const today = new Date();
+  if (type === "today") {
+    el.value = today.toISOString().split("T")[0];
+  } else if (type === "yesterday") {
+    const yest = new Date(today);
+    yest.setDate(yest.getDate() - 1);
+    el.value = yest.toISOString().split("T")[0];
+  }
+};
+
+window.handleSelectCustomToggle = function(selectEl, customInputId) {
+  const customEl = document.getElementById(customInputId);
+  if (!customEl) return;
+  if (selectEl.value === "__custom__") {
+    customEl.style.display = "block";
+    customEl.focus();
+  } else {
+    customEl.style.display = "none";
+  }
+};
+
 function renderCaseDetailWorkspace(detail) {
   const container = document.getElementById("caseDetailContent");
   const c = detail.case;
   const missing = detail.missing_fields || [];
   const history = detail.history || [];
 
+  const missingSet = new Set(missing.map(m => m.field_name));
+  const criticalSet = new Set(missing.filter(m => m.is_critical).map(m => m.field_name));
+
   const detectedItems = [
-    { label: "Hastane / Şube", val: c.hospital },
-    { label: "Poliklinik / Birim", val: c.department },
-    { label: "Olay Tarihi", val: c.incident_date },
-    { label: "Yaklaşık Saat", val: c.approximate_time },
-    { label: "Hizmet / Tetkik", val: c.service_type },
-    { label: "Personel Unvanı", val: c.staff_role },
-    { label: "Personel Adı", val: c.staff_name },
-    { label: "Fatura Detayı", val: c.billing_context }
+    { key: "hospital", label: "Hastane / Şube", val: c.hospital },
+    { key: "department", label: "Poliklinik / Birim", val: c.department },
+    { key: "incident_date", label: "Olay Tarihi", val: c.incident_date },
+    { key: "approximate_time", label: "Randevu / Olay Saati", val: c.approximate_time },
+    { key: "service_type", label: "Hizmet / Tetkik", val: c.service_type },
+    { key: "staff_role", label: "Personel Unvanı", val: c.staff_role },
+    { key: "staff_name", label: "Personel Adı", val: c.staff_name },
+    { key: "billing_context", label: "Fatura / Ödeme Detayı", val: c.billing_context }
   ];
 
-  const detectedRowsHtml = detectedItems.map(f => `
-    <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #f1f5f9; font-size:0.83rem;">
-      <span style="color:#64748b;">${f.label}</span>
-      <span style="font-weight:700; color:#0f172a; text-align:right; max-width:65%;">${f.val || '<span style="color:#94a3b8; font-weight:normal; font-style:italic;">Belirtilmemiş</span>'}</span>
-    </div>
-  `).join("");
+  const detectedRowsHtml = detectedItems.map(f => {
+    const isMissing = missingSet.has(f.key) || !f.val;
+    const isCrit = criticalSet.has(f.key);
+    const statusTag = isMissing
+      ? `<span class="field-status-tag ${isCrit ? 'critical' : 'missing'}">${isCrit ? 'KRİTİK EKSİK' : 'EKSİK'}</span>`
+      : `<span class="field-status-tag detected">Teyitli</span>`;
+
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #f1f5f9; font-size:0.84rem;">
+        <span style="color:#64748b; display:flex; align-items:center; gap:6px;">
+          ${f.label}
+          ${statusTag}
+        </span>
+        <span style="font-weight:700; color:#0f172a; text-align:right; max-width:60%;">
+          ${f.val || '<span style="color:#94a3b8; font-weight:normal; font-style:italic;">Belirtilmemiş</span>'}
+        </span>
+      </div>
+    `;
+  }).join("");
 
   const missingHtml = missing.length > 0
     ? missing.map(m => `
         <div style="margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid #f8fafc; font-size:0.83rem;">
           <div>
             <strong style="color:#334155;">${formatFieldName(m.field_name)}</strong>
-            <span style="background:${m.is_critical ? '#fee2e2' : '#f1f5f9'}; color:${m.is_critical ? '#991b1b' : '#475569'}; font-size:0.68rem; font-weight:700; padding:1px 5px; border-radius:3px; margin-left:4px;">
+            <span class="field-status-tag ${m.is_critical ? 'critical' : 'missing'}" style="margin-left:4px;">
               ${m.is_critical ? 'KRİTİK EKSİK' : 'KÜÇÜK DETAY'}
             </span>
           </div>
@@ -565,6 +721,9 @@ function renderCaseDetailWorkspace(detail) {
         </div>
       `).join("")
     : `<div style="color:#059669; font-weight:700; font-size:0.86rem; padding:10px 0;">Tüm operasyonel gereksinimler eksiksiz teyit edildi.</div>`;
+
+  const timeVal = extractTimeForInput(c.approximate_time);
+  const dateVal = extractDateForInput(c.incident_date);
 
   container.innerHTML = `
     <div class="glass-card" style="margin-bottom:1.2rem;">
@@ -595,7 +754,7 @@ function renderCaseDetailWorkspace(detail) {
 
     <div class="grid-2col">
       <div class="glass-card">
-        <div class="card-title">Tespit Edilen Operasyonel Bilgiler</div>
+        <div class="card-title">Mevcut Operasyonel Durum</div>
         ${detectedRowsHtml}
       </div>
 
@@ -606,35 +765,112 @@ function renderCaseDetailWorkspace(detail) {
     </div>
 
     <!-- CSR Investigation & Re-evaluation Form -->
-    <div class="glass-card" style="border: 2px solid #ddd6fe;">
-      <div class="card-title" style="color:var(--primary-dark);">Müşteri Hizmetleri İncelemesi & Yeniden Değerlendirme</div>
-      <p style="font-size:0.84rem; color:#475569; margin-bottom:12px;">
-        Hasta ile yapılan görüşmede teyit edilen bilgileri aşağıya girin. Girilen teyitli bilgiler yapay zekanın ilk tahminlerini kesin olarak ezer.
+    <div class="glass-card" style="border: 2px solid var(--primary-glow); background:#ffffff;">
+      <div class="card-title" style="color:var(--primary-dark); font-size:1.05rem;">
+        Müşteri Hizmetleri Masası: Operasyonel Bilgileri Tamamlama ve Teyit Formu
+      </div>
+      <p style="font-size:0.84rem; color:#475569; margin-bottom:14px; line-height:1.5;">
+        Hasta ile yapılan telefon görüşmesinde teyit edilen bilgileri aşağıdan seçip tamamlayınız. Temsilcinin girdiği teyitli bilgiler yapay zekanın ilk tespitlerinin üzerine yazılarak vakayı anında yeniden puanlar ve onaylar.
       </p>
 
       <div class="grid-3col form-row">
+        <!-- Hastane / Şube -->
         <div class="form-group">
-          <label class="form-label">Teyit Edilen Hastane</label>
-          <input type="text" class="form-input" id="csrHospital" value="${c.hospital || ''}" placeholder="Örn: Merkez Şehir Hastanesi" />
+          <label class="form-label">Teyit Edilen Hastane / Şube</label>
+          <select class="form-select form-select-sm" id="csrHospital" onchange="handleSelectCustomToggle(this, 'csrHospitalCustom')">
+            ${buildSelectOptions(HOSPITAL_OPTIONS, c.hospital, "Hastane / Şube Seçiniz...")}
+          </select>
+          <input type="text" class="form-input form-input-sm" id="csrHospitalCustom" placeholder="Farklı hastane/şube adı yazınız..." style="display:none; margin-top:6px;" />
         </div>
+
+        <!-- Poliklinik / Birim -->
         <div class="form-group">
-          <label class="form-label">Teyit Edilen Poliklinik</label>
-          <input type="text" class="form-input" id="csrDept" value="${c.department || ''}" placeholder="Örn: Kardiyoloji" />
+          <label class="form-label">Teyit Edilen Poliklinik / Birim</label>
+          <select class="form-select form-select-sm" id="csrDept" onchange="handleSelectCustomToggle(this, 'csrDeptCustom')">
+            ${buildSelectOptions(CLINICAL_DEPARTMENTS, c.department, "Poliklinik / Birim Seçiniz...")}
+          </select>
+          <input type="text" class="form-input form-input-sm" id="csrDeptCustom" placeholder="Farklı birim adı yazınız..." style="display:none; margin-top:6px;" />
         </div>
+
+        <!-- Randevu / Olay Saati -->
         <div class="form-group">
-          <label class="form-label">Teyit Edilen Saat</label>
-          <input type="text" class="form-input" id="csrTime" value="${c.approximate_time || ''}" placeholder="Örn: 14:15" />
+          <label class="form-label">Teyit Edilen Saat (HH:MM)</label>
+          <input type="time" class="form-input form-input-sm" id="csrTime" value="${timeVal}" />
+          <div class="shortcuts-bar">
+            <span style="font-size:0.72rem; color:#64748b; line-height:1.8;">Hızlı:</span>
+            <button type="button" class="shortcut-btn" onclick="setCsrTime('09:00')">09:00</button>
+            <button type="button" class="shortcut-btn" onclick="setCsrTime('10:30')">10:30</button>
+            <button type="button" class="shortcut-btn" onclick="setCsrTime('14:00')">14:00</button>
+            <button type="button" class="shortcut-btn" onclick="setCsrTime('15:30')">15:30</button>
+          </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Temsilci Görüşme Notu</label>
-        <input type="text" class="form-input" id="csrNotes" placeholder="Örn: Hasta telefonla arandı, randevu saati ve poliklinik teyit edildi." />
+      <div class="grid-3col form-row">
+        <!-- Olay / Randevu Tarihi -->
+        <div class="form-group">
+          <label class="form-label">Teyit Edilen Tarih</label>
+          <input type="date" class="form-input form-input-sm" id="csrDate" value="${dateVal}" />
+          <div class="shortcuts-bar">
+            <span style="font-size:0.72rem; color:#64748b; line-height:1.8;">Hızlı:</span>
+            <button type="button" class="shortcut-btn" onclick="setCsrDate('today')">Bugün</button>
+            <button type="button" class="shortcut-btn" onclick="setCsrDate('yesterday')">Dün</button>
+          </div>
+        </div>
+
+        <!-- Hizmet / Tetkik Türü -->
+        <div class="form-group">
+          <label class="form-label">Hizmet / Tetkik Türü</label>
+          <select class="form-select form-select-sm" id="csrServiceType">
+            ${buildSelectOptions(SERVICE_TYPE_OPTIONS, c.service_type, "Hizmet Türü Seçiniz...", false)}
+          </select>
+        </div>
+
+        <!-- Personel Unvanı -->
+        <div class="form-group">
+          <label class="form-label">İlgili Personel Unvanı</label>
+          <select class="form-select form-select-sm" id="csrStaffRole">
+            ${buildSelectOptions(STAFF_ROLE_OPTIONS, c.staff_role, "Personel Unvanı Seçiniz...", false)}
+          </select>
+        </div>
       </div>
 
-      <div class="form-actions">
-        <button class="btn btn-primary btn-large" onclick="submitCsrReevaluation('${c.case_id}')">
-          Vakayı Yeniden Değerlendir ve Onayla
+      <div class="grid-2col form-row">
+        <!-- Personel Adı -->
+        <div class="form-group">
+          <label class="form-label">Personel Adı (Varsa)</label>
+          <input type="text" class="form-input form-input-sm" id="csrStaffName" value="${c.staff_name || ''}" placeholder="Örn: Dr. Ahmet Yılmaz veya Hemşire Fatma" />
+        </div>
+
+        <!-- Fatura / Ödeme Detayı -->
+        <div class="form-group">
+          <label class="form-label">Fatura / Ödeme / Tutar Detayı (Varsa)</label>
+          <input type="text" class="form-input form-input-sm" id="csrBilling" value="${c.billing_context || ''}" placeholder="Örn: Mükerrer kart çekimi, POS slip no, 350 TL" />
+        </div>
+      </div>
+
+      <div class="grid-2col form-row">
+        <!-- Görüşme Sonucu -->
+        <div class="form-group">
+          <label class="form-label">Görüşme İletişim Sonucu</label>
+          <select class="form-select form-select-sm" id="csrContactStatus">
+            <option value="Information Collected" selected>Görüşme Yapıldı — Eksik Bilgiler Teyit Edildi</option>
+            <option value="In Progress">İnceleme Devam Ediyor</option>
+            <option value="Patient Reached - Partially Resolved">Hastaya Ulaşıldı — Kısmi Bilgi Alındı</option>
+            <option value="No Answer / Busy">Cevap Vermedi / Ulaşılamadı</option>
+          </select>
+        </div>
+
+        <!-- Temsilci Görüşme Notu -->
+        <div class="form-group">
+          <label class="form-label">Temsilci İnceleme ve Çözüm Notu</label>
+          <input type="text" class="form-input form-input-sm" id="csrNotes" placeholder="Örn: Hasta telefonla arandı, randevu saati ve poliklinik teyit edildi." />
+        </div>
+      </div>
+
+      <div class="form-actions" style="margin-top:1.2rem;">
+        <button class="btn btn-primary btn-large" style="width:100%; justify-content:center; font-weight:700; font-size:0.95rem; padding:0.75rem 1.5rem;" onclick="submitCsrReevaluation('${c.case_id}')">
+          Teyitli Operasyonel Bilgileri Kaydet, Vakayı Yeniden Değerlendir ve Onayla
         </button>
       </div>
     </div>
@@ -651,14 +887,68 @@ function renderCaseDetailWorkspace(detail) {
 // CSR Re-evaluation Action
 async function submitCsrReevaluation(caseId) {
   const confirmed = {};
-  const hosp = document.getElementById("csrHospital").value.trim();
-  const dept = document.getElementById("csrDept").value.trim();
-  const time = document.getElementById("csrTime").value.trim();
-  const notes = document.getElementById("csrNotes").value.trim();
 
+  // Hospital
+  const hospEl = document.getElementById("csrHospital");
+  const hospCustomEl = document.getElementById("csrHospitalCustom");
+  let hosp = hospEl ? hospEl.value.trim() : "";
+  if (hosp === "__custom__" && hospCustomEl) {
+    hosp = hospCustomEl.value.trim();
+  }
   if (hosp) confirmed.hospital = hosp;
+
+  // Department
+  const deptEl = document.getElementById("csrDept");
+  const deptCustomEl = document.getElementById("csrDeptCustom");
+  let dept = deptEl ? deptEl.value.trim() : "";
+  if (dept === "__custom__" && deptCustomEl) {
+    dept = deptCustomEl.value.trim();
+  }
   if (dept) confirmed.department = dept;
-  if (time) confirmed.approximate_time = time;
+
+  // Time
+  const timeEl = document.getElementById("csrTime");
+  if (timeEl && timeEl.value.trim()) {
+    confirmed.approximate_time = timeEl.value.trim();
+  }
+
+  // Date
+  const dateEl = document.getElementById("csrDate");
+  if (dateEl && dateEl.value.trim()) {
+    confirmed.incident_date = dateEl.value.trim();
+  }
+
+  // Service Type
+  const srvEl = document.getElementById("csrServiceType");
+  if (srvEl && srvEl.value.trim()) {
+    confirmed.service_type = srvEl.value.trim();
+  }
+
+  // Staff Role
+  const roleEl = document.getElementById("csrStaffRole");
+  if (roleEl && roleEl.value.trim()) {
+    confirmed.staff_role = roleEl.value.trim();
+  }
+
+  // Staff Name
+  const nameEl = document.getElementById("csrStaffName");
+  if (nameEl && nameEl.value.trim()) {
+    confirmed.staff_name = nameEl.value.trim();
+  }
+
+  // Billing Context
+  const billEl = document.getElementById("csrBilling");
+  if (billEl && billEl.value.trim()) {
+    confirmed.billing_context = billEl.value.trim();
+  }
+
+  // Notes
+  const notesEl = document.getElementById("csrNotes");
+  const notes = notesEl && notesEl.value.trim() ? notesEl.value.trim() : "Müşteri Hizmetleri Masası üzerinden teyit edildi.";
+
+  // Contact Status
+  const statusEl = document.getElementById("csrContactStatus");
+  const contactStatus = statusEl && statusEl.value ? statusEl.value : "Information Collected";
 
   try {
     const res = await fetch(`${API_BASE}/api/cases/${caseId}/reevaluate`, {
@@ -666,16 +956,19 @@ async function submitCsrReevaluation(caseId) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         confirmed_fields: confirmed,
-        notes: notes || "Temsilci inceleme masası üzerinden teyit edildi.",
-        contact_status: "Information Collected"
+        notes: notes,
+        contact_status: contactStatus
       })
     });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
     const resultData = await res.json();
-    alert(`Vaka başarıyla yeniden değerlendirildi!\nSkor: ${resultData.result.completeness_score}/100\nDurum: Onaylandı / İş Akışına Sevk`);
+    alert(`Vaka başarıyla yeniden değerlendirildi!\nYeni Skor: ${resultData.result.completeness_score}/100\nDurum: ${resultData.case.status}`);
     refreshAllData();
   } catch (err) {
     console.error(err);
-    alert("Yeniden değerlendirme sırasında hata oluştu.");
+    alert("Yeniden değerlendirme sırasında bir hata oluştu.");
   }
 }
 
