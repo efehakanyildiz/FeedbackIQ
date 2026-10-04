@@ -14,31 +14,27 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
     "Bekleme Süresi": {
         "weights": {
             "hospital": 25,
-            "department": 20,
-            "service_type": 10,
+            "department": 25,
             "incident_date": 15,
-            "approximate_time": 10,
+            "approximate_time": 15,
             "description_of_event": 20,
         },
-        "critical_fields": ["hospital", "incident_date", "description_of_event"],
-        "or_groups": [
-            ("department", "service_type"),
-        ],
+        "critical_fields": ["hospital", "department", "incident_date", "description_of_event"],
+        "or_groups": [],
         "explanation": "Bekleme süresi şikayetlerinde kuyruk ve randevu loglarını denetlemek için hastane şubesi, poliklinik, tarih ve yaklaşık saat bilgisi gereklidir."
     },
     "Personel Davranışı": {
         "weights": {
             "hospital": 25,
-            "department": 15,
-            "service_type": 10,
+            "department": 20,
             "incident_date": 15,
             "staff_role": 15,
             "staff_name": 5,
+            "approximate_time": 5,
             "description_of_event": 15,
         },
-        "critical_fields": ["hospital", "incident_date", "description_of_event"],
+        "critical_fields": ["hospital", "department", "incident_date", "description_of_event"],
         "or_groups": [
-            ("department", "service_type"),
             ("staff_role", "staff_name"),
         ],
         "explanation": "Personel tutumu bildirimlerinde birim yöneticisinin hedefe yönelik inceleme yapabilmesi için hastane, ilgili poliklinik ve personelin unvanı/adı gereklidir."
@@ -46,9 +42,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
     "Fatura & Ödeme": {
         "weights": {
             "hospital": 25,
+            "department": 15,
             "incident_date": 15,
             "billing_context": 25,
-            "service_type": 15,
             "description_of_event": 20,
         },
         "critical_fields": ["hospital", "billing_context", "description_of_event"],
@@ -58,83 +54,69 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
     "Randevu Süreci": {
         "weights": {
             "hospital": 25,
-            "department": 20,
-            "service_type": 15,
-            "incident_date": 20,
+            "department": 25,
+            "incident_date": 15,
+            "approximate_time": 15,
             "description_of_event": 20,
         },
-        "critical_fields": ["hospital", "incident_date", "description_of_event"],
-        "or_groups": [
-            ("department", "service_type"),
-        ],
-        "explanation": "Randevu aksaklıklarında HBYS kayıtlarını denetlemek için hastane, uzmanlık alanı ve randevu tarihi gereklidir."
+        "critical_fields": ["hospital", "department", "incident_date", "description_of_event"],
+        "or_groups": [],
+        "explanation": "Randevu aksaklıklarında HBYS kayıtlarını denetlemek için hastane, poliklinik / uzmanlık alanı ve randevu tarihi gereklidir."
     },
     "Danışma / Kayıt": {
         "weights": {
             "hospital": 25,
+            "department": 20,
             "incident_date": 20,
-            "department": 15,
-            "service_type": 15,
-            "description_of_event": 25,
+            "approximate_time": 15,
+            "description_of_event": 20,
         },
         "critical_fields": ["hospital", "incident_date", "description_of_event"],
-        "or_groups": [
-            ("department", "service_type"),
-        ],
+        "or_groups": [],
         "explanation": "Hasta kabul ve kayıt aksaklıklarında desk işlemlerini incelemek için hastane lokasyonu ve tarih bilgisi gereklidir."
     },
     "Temizlik & Tesis": {
         "weights": {
             "hospital": 30,
-            "department": 20,
-            "service_type": 10,
+            "department": 25,
             "incident_date": 15,
-            "description_of_event": 25,
+            "description_of_event": 30,
         },
-        "critical_fields": ["hospital", "description_of_event"],
-        "or_groups": [
-            ("department", "service_type"),
-        ],
+        "critical_fields": ["hospital", "department", "description_of_event"],
+        "or_groups": [],
         "explanation": "Hijyen ve teknik altyapı bildirimlerinde temizlik veya teknik ekipleri yönlendirmek için tam hastane ve birim/kat lokasyonu gereklidir."
     },
     "Tıbbi Hizmet Süreci": {
         "weights": {
             "hospital": 25,
-            "department": 20,
-            "service_type": 15,
+            "department": 25,
             "incident_date": 15,
-            "staff_role": 10,
-            "description_of_event": 15,
+            "service_type": 15,
+            "description_of_event": 20,
         },
-        "critical_fields": ["hospital", "incident_date", "description_of_event"],
-        "or_groups": [
-            ("department", "service_type"),
-        ],
+        "critical_fields": ["hospital", "department", "incident_date", "description_of_event"],
+        "or_groups": [],
         "explanation": "Klinik süreç geri bildirimlerinde kalite direktörlüğü incelemesi için hastane, poliklinik ve tetkik bilgisi gereklidir."
     },
     "İletişim & Bilgilendirme": {
         "weights": {
             "hospital": 25,
-            "department": 20,
-            "service_type": 15,
-            "incident_date": 15,
-            "description_of_event": 25,
+            "department": 25,
+            "incident_date": 20,
+            "description_of_event": 30,
         },
-        "critical_fields": ["hospital", "description_of_event"],
-        "or_groups": [
-            ("department", "service_type"),
-        ],
+        "critical_fields": ["hospital", "department", "description_of_event"],
+        "or_groups": [],
         "explanation": "İletişim eksikliklerinde hasta bilgilendirme süreçlerini netleştirmek için hastane ve birim bağlamı gereklidir."
     },
     "Teknik Aksaklık": {
         "weights": {
-            "hospital": 20,
-            "department": 15,
-            "service_type": 15,
+            "hospital": 25,
+            "department": 20,
             "incident_date": 20,
-            "description_of_event": 30,
+            "description_of_event": 35,
         },
-        "critical_fields": ["description_of_event"],
+        "critical_fields": ["hospital", "description_of_event"],
         "or_groups": [],
         "explanation": "Sistem arızalarında arızalanan cihaz veya yazılımın (portal, vezne POS, sıramatik) açıkça tanımlanması gereklidir."
     },

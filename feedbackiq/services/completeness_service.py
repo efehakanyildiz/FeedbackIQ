@@ -131,26 +131,6 @@ def evaluate_completeness(
     critical_count = len(sorted_critical)
     is_hospital_missing = "hospital" in sorted_missing
 
-    # 2. Score Harmonization and Critical Deficiency Penalty:
-    # A healthcare feedback without a hospital location or with missing critical details cannot be routed to a unit.
-    # Therefore, its score is strictly capped within the Tier 3 range (< 50).
-    # Brackets:
-    # - Tier 1 (Onaylandı): 80 - 100 (tüm kritik alanlar tam, eksiksiz)
-    # - Tier 2 (AI Sesli Arama Botu): 50 - 75 (hastane biliniyor, 1-2 tali detay eksik)
-    # - Tier 3 (Müşteri Hizmetleri Masası): 0 - 45 (hastane yok veya kritik veri eksik)
-    if critical_count >= 2 or missing_count >= 3:
-        normalized_score = min(normalized_score, 30)
-    elif critical_count == 1 or is_hospital_missing:
-        # Missing critical hospital or primary context caps score at 45 (Tier 3)
-        normalized_score = min(normalized_score, 45)
-    elif missing_count in [1, 2]:
-        # Minor operational gap (e.g. approximate time or secondary role missing)
-        normalized_score = min(normalized_score, 75)
-        normalized_score = max(normalized_score, 55)
-    else:
-        # missing_count == 0
-        normalized_score = max(normalized_score, 90)
-
     # Build missing field items with questions
     missing_items: List[MissingFieldItem] = []
     for f in sorted_missing:
@@ -165,44 +145,68 @@ def evaluate_completeness(
             )
         )
 
-    # 3. 3-Tier Triage Classification Logic
-    if missing_count == 0 or (critical_count == 0 and not is_hospital_missing and normalized_score >= 80):
-        # Kademe 1: Yeterli Veri -> Onaylandı / Doğrudan İş Akışına Sevk
-        triage_tier = TriageTier.TIER_1_APPROVED
-        status = CompletenessStatus.APPROVED
-        is_complete = True
-        requires_ai_call = False
-        requires_csr_escalation = False
-        triage_reason = "Tüm operasyonel veriler eksiksiz ve doğrulanmıştır. İlgili birim iş akışına onaylandı."
-        follow_up_priority = FollowUpPriority.LOW
+    # 2. Strict 3-Tier Triage Classification Logic:
 
-    elif not is_hospital_missing and critical_count == 0 and 50 <= normalized_score <= 79 and missing_count <= 2:
-        # Kademe 2: Küçük Eksiklik (Hastane ve olay biliniyor, 1-2 tali detay eksik) -> AI Sesli Arama Botu
-        triage_tier = TriageTier.TIER_2_AI_CALL
-        status = CompletenessStatus.AI_CALL_SCHEDULED
-        is_complete = False
-        requires_ai_call = True
-        requires_csr_escalation = False
-        missing_names = [get_field_display_name(f) for f in sorted_missing]
-        triage_reason = (
-            f"Küçük operasyonel eksiklik ({', '.join(missing_names)}). "
-            "Hedefli telefon teyidi için otonom Yapay Zeka Sesli Arama Botuna yönlendirildi."
-        )
-        follow_up_priority = FollowUpPriority.MEDIUM
-
-    else:
-        # Kademe 3: Kritik Eksik Veri (Hastane belirsiz veya birden çok eksik alan var) -> Müşteri Hizmetleri İncelemesi
+    # KADEME 3: Kritik Eksik Veri (Müşteri Hizmetleri İnceleme Masası)
+    # Koşul: Herhangi bir kritik alan eksikse (Hastane, Poliklinik/Birim, Fatura Detayı, Tarih, Olay vb.)
+    # veya 4 ve daha fazla alan eksikse:
+    if critical_count > 0 or is_hospital_missing or missing_count >= 4:
         triage_tier = TriageTier.TIER_3_CSR_ESCALATION
         status = CompletenessStatus.CSR_ESCALATION
         is_complete = False
         requires_ai_call = False
         requires_csr_escalation = True
-        missing_names = [get_field_display_name(f) for f in sorted_missing]
+
+        # Skor kesinlikle Kademe 3 aralığına (0 - 45) çekilir
+        if critical_count >= 2 or missing_count >= 4:
+            normalized_score = min(normalized_score, 30)
+        else:
+            normalized_score = min(normalized_score, 45)
+
+        crit_names = [get_field_display_name(f) for f in sorted_critical]
         triage_reason = (
-            f"Kritik bilgi eksikliği ({', '.join(missing_names) if missing_names else 'yetersiz operasyonel veri'}). "
+            f"Kritik operasyonel bilgi eksikliği ({', '.join(crit_names) if crit_names else 'yetersiz veri'}). "
             "Temsilci incelemesi için Müşteri Hizmetleri Masasına sevk edildi."
         )
         follow_up_priority = FollowUpPriority.HIGH
+
+    # KADEME 2: Yapay Zeka Asistanı (AI Sesli Arama Botu Planlandı)
+    # Koşul: Tüm kritik alanlar mevcut (Hastane, Poliklinik, Tarih, Olay tam),
+    # ancak 1, 2 veya 3 tane normal operasyonel detay eksik (yaklaşık saat, hizmet türü, personel unvanı/adı):
+    # Otonom Yapay Zeka Asistanı hastayı telefonla arayarak bu eksik detayları sorar.
+    elif missing_count in [1, 2, 3]:
+        triage_tier = TriageTier.TIER_2_AI_CALL
+        status = CompletenessStatus.AI_CALL_SCHEDULED
+        is_complete = False
+        requires_ai_call = True
+        requires_csr_escalation = False
+
+        # Skor 1 eksikte 75, 2 eksikte 65, 3 eksikte 55 olarak net şekilde Kademe 2 aralığına yerleşir
+        if missing_count == 1:
+            normalized_score = 75
+        elif missing_count == 2:
+            normalized_score = 65
+        else:
+            normalized_score = 55
+
+        missing_names = [get_field_display_name(f) for f in sorted_missing]
+        triage_reason = (
+            f"Normal operasyonel eksiklik ({', '.join(missing_names)}). "
+            "Hedefli telefon teyidi için Yapay Zeka Sesli Arama Asistanına yönlendirildi."
+        )
+        follow_up_priority = FollowUpPriority.MEDIUM
+
+    # KADEME 1: Onaylandı / Doğrudan İş Akışına Sevk (Yeterli Veri)
+    # Koşul: Bütün operasyonel veriler eksiksiz ve teyitli (missing_count == 0).
+    else:
+        triage_tier = TriageTier.TIER_1_APPROVED
+        status = CompletenessStatus.APPROVED
+        is_complete = True
+        requires_ai_call = False
+        requires_csr_escalation = False
+        normalized_score = 100
+        triage_reason = "Tüm operasyonel veriler eksiksiz ve doğrulanmıştır. İlgili birim iş akışına onaylandı."
+        follow_up_priority = FollowUpPriority.LOW
 
     # Build why_needed explanation in Turkish
     base_desc = rule_config.get("explanation", "Kurumsal inceleme için operasyonel ayrıntılar gereklidir.")
