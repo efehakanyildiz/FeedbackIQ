@@ -1,151 +1,117 @@
 """
 About & Architecture Page: Explains system purpose, business problem, architectural design,
-why this is NOT a chatbot, and the separation between Generative AI and deterministic rules.
+the 3-tier triage model, and the separation between Generative AI and deterministic rules.
 """
 
 import streamlit as st
 
 
 def render_about_page():
-    st.markdown('<div class="app-brand-badge">Enterprise System Architecture</div>', unsafe_allow_html=True)
+    st.markdown('<div class="app-brand-badge">System Architecture & Governance</div>', unsafe_allow_html=True)
     st.title("About FeedbackIQ & Architecture")
     st.markdown(
-        "<p style='color:#64748b; margin-top:-10px; margin-bottom: 25px;'>"
-        "An AI-powered data quality layer and triage gate for healthcare patient experience operations."
+        "<p style='color:#64748b; margin-top:-8px; margin-bottom: 24px; font-size:0.95rem;'>"
+        "An AI-powered data quality layer and 3-tier operational triage gate for healthcare patient experience management."
         "</p>",
         unsafe_allow_html=True
     )
 
-    # Core Differentiation Callout: Why NOT a Chatbot
+    # Core Differentiation Callout
     st.markdown("""
-    <div class="iq-card" style="border-left: 5px solid #2563eb;">
-        <div class="iq-card-title" style="color:#1d4ed8; font-size:1.05rem;">
-            <span>🛡️</span> Fundamental Design Principle: Why This Is NOT a Chatbot
+    <div class="iq-card" style="border-left: 3px solid #2563eb;">
+        <div class="iq-card-title" style="color:#1d4ed8; font-size:0.95rem;">
+            Architectural Philosophy: Silent Intelligence vs. Conversational Chatbots
         </div>
-        <p style="color:#334155; font-size:0.92rem; line-height:1.6;">
-            Most AI implementations attempt to place an interactive chatbot in front of frustrated patients. 
-            <strong>FeedbackIQ takes the opposite architectural approach:</strong>
+        <p style="color:#334155; font-size:0.9rem; line-height:1.6;">
+            Most implementations attempt to force an interactive chatbot onto frustrated patients. 
+            <strong>FeedbackIQ takes an enterprise data-pipeline approach:</strong>
         </p>
-        <ul style="color:#334155; font-size:0.9rem; line-height:1.6;">
-            <li><strong>Zero Conversational Noise:</strong> The patient submits feedback normally through any existing channel (web forms, SMS, QR codes, surveys, or call centers).</li>
-            <li><strong>Silent Backend Intelligence:</strong> Google Gemini operates purely in the backend as a high-precision, low-temperature information extraction engine.</li>
-            <li><strong>Deterministic Quality Enforcement:</strong> Gemini is <em>never</em> allowed to decide if a case is complete or calculate scores. Business rules are strictly executed in predictable, testable Python code.</li>
-            <li><strong>Human-in-the-Loop Triage:</strong> Incomplete records are diverted to a dedicated Customer Service Queue, equipping representatives with exact targeted questions before unit escalation.</li>
+        <ul style="color:#334155; font-size:0.88rem; line-height:1.6;">
+            <li><strong>Frictionless Patient Ingestion:</strong> Patients submit feedback normally through web forms, QR codes, SMS, or surveys without conversational friction.</li>
+            <li><strong>Silent Backend Intelligence:</strong> Google Gemini operates purely in the backend as a low-temperature information extraction engine.</li>
+            <li><strong>Predictable Business Governance:</strong> Triage decisions and completeness scores are computed by deterministic Python rules—never by subjective LLM outputs.</li>
+            <li><strong>100% Free & Open Architecture:</strong> Runs completely free via Google AI Studio's free tier, local SQLite storage, and a deterministic offline fallback mode.</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
 
-    # Business Problem & Solution
-    c1, c2 = st.columns([1, 1])
-    with c1:
+    # 3-Tier Classification Model Explained
+    st.markdown("""
+    <div class="iq-card">
+        <div class="iq-card-title">Three-Tier Triage Framework</div>
+    """, unsafe_allow_html=True)
+
+    t1, t2, t3 = st.columns(3)
+    with t1:
         st.markdown("""
-        <div class="iq-card">
-            <div class="iq-card-title">
-                <span>⚠️</span> The Operational Problem
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:1rem; height:100%;">
+            <div style="font-weight:700; color:#15803d; font-size:0.88rem; margin-bottom:6px;">TIER 1: APPROVED</div>
+            <div style="font-size:0.8rem; color:#166534; line-height:1.5;">
+                <strong>Condition:</strong> Feedback contains sufficient operational context (Hospital, Unit, Event details, Score &ge; 80).<br/><br/>
+                <strong>Action:</strong> Immediately approved and routed directly to clinic managers and departmental ticketing.
             </div>
-            <p style="font-size:0.88rem; color:#475569; line-height:1.55;">
-                Patients often submit vague complaints such as: <em>"I waited for an hour yesterday and nobody helped me."</em><br/><br/>
-                When such incomplete records enter hospital ticketing systems, departmental managers:
-            </p>
-            <ul style="font-size:0.85rem; color:#64748b; line-height:1.5;">
-                <li>Cannot identify which branch, clinic, or counter is responsible.</li>
-                <li>Route tickets back and forth between units, delaying investigation.</li>
-                <li>Reach out to patients blindly without knowing what specific facts to ask.</li>
-                <li>Create noisy, low-quality compliance logs.</li>
-            </ul>
         </div>
         """, unsafe_allow_html=True)
 
-    with c2:
+    with t2:
         st.markdown("""
-        <div class="iq-card">
-            <div class="iq-card-title">
-                <span>🎯</span> The FeedbackIQ Solution
+        <div style="background:#eef2ff; border:1px solid #c7d2fe; border-radius:6px; padding:1rem; height:100%;">
+            <div style="font-weight:700; color:#4338ca; font-size:0.88rem; margin-bottom:6px;">TIER 2: AI VOICE BOT CALL</div>
+            <div style="font-size:0.8rem; color:#3730a3; line-height:1.5;">
+                <strong>Condition:</strong> Feedback has minor operational gaps (e.g., missing exact time or clinic unit, Score 50–79).<br/><br/>
+                <strong>Action:</strong> Dispatched to an automated AI Voice Agent to conduct a brief spoken telephone inquiry, saving staff hours.
             </div>
-            <p style="font-size:0.88rem; color:#475569; line-height:1.55;">
-                FeedbackIQ acts as an <strong>intelligent data quality firewall</strong> positioned before the hospital's operational case management workflow:
-            </p>
-            <ul style="font-size:0.85rem; color:#64748b; line-height:1.5;">
-                <li>Extracts structured fields (Hospital, Unit, Date, Time, Staff, Billing Context).</li>
-                <li>Applies issue-specific completeness rules and computes a 0–100 quality score.</li>
-                <li>Generates deterministic questions for only the missing critical variables.</li>
-                <li>Enables CSRs to collect missing data, re-evaluate, and dispatch cleanly.</li>
-            </ul>
         </div>
         """, unsafe_allow_html=True)
+
+    with t3:
+        st.markdown("""
+        <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:6px; padding:1rem; height:100%;">
+            <div style="font-weight:700; color:#9f1239; font-size:0.88rem; margin-bottom:6px;">TIER 3: CSR ESCALATION</div>
+            <div style="font-size:0.8rem; color:#881337; line-height:1.5;">
+                <strong>Condition:</strong> Multiple critical parameters are missing or dispute is complex (Score &lt; 50).<br/><br/>
+                <strong>Action:</strong> Escalated to human Customer Service Representatives for comprehensive patient outreach.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Workflow Diagram
     st.markdown("""
     <div class="iq-card">
-        <div class="iq-card-title">
-            <span>🔄</span> End-to-End System Workflow
-        </div>
+        <div class="iq-card-title">System Workflow Diagram</div>
     """, unsafe_allow_html=True)
 
     st.code("""
   Patient Feedback (Unstructured Text)
                  │
                  ▼
-  Google Gemini API (Strict Extraction, Low Temp)
+  Google Gemini API (Strict Extraction, Temp=0.1)
                  │
                  ▼
-  Validated JSON (Pydantic Schema Validation)
+  Pydantic Validation (ExtractedFeedbackData)
                  │
                  ▼
-  Python Rules Engine (Deterministic Weights & Critical Fields)
+  Deterministic Rules Engine (config/completeness_rules.py)
                  │
                  ▼
-         Completeness Score (0-100)
+        3-Tier Triage Engine
                  │
-        ┌────────┴───────────────────────────┐
-        ▼                                    ▼
-[Score >= 85 & No Critical Gaps]    [Critical Fields Missing]
-        │                                    │
-        ▼                                    ▼
- Ready for Existing Workflow         Customer Service Queue
- (Escalate to Clinic/Unit)                   │
-                                             ▼
-                                     CSR Contacts Patient
-                                             │
-                                             ▼
-                                     Context Re-evaluation
-                                             │
-                                             ▼
-                                     Ready for Workflow
+       ┌─────────┼────────────────────────┐
+       ▼         ▼                        ▼
+[Tier 1]      [Tier 2]                 [Tier 3]
+Sufficient    Minor Gap                Major Critical Gaps
+       │         │                        │
+       ▼         ▼                        ▼
+  APPROVED    AI VOICE CALL            CUSTOMER SERVICE
+Direct Route  Automated Call           Representative Outreach
+to Clinic     Captures Missing Fields  Investigates & Re-evaluates
+                 │                        │
+                 └───────────┬────────────┘
+                             │
+                             ▼
+                    Resolved / Ready
     """, language="text")
 
     st.markdown("</div>", unsafe_allow_html=True)
-
-    # Technology Stack & Data Privacy
-    tc1, tc2 = st.columns([1, 1])
-    with tc1:
-        st.markdown("""
-        <div class="iq-card">
-            <div class="iq-card-title">
-                <span>⚙️</span> Enterprise Technology Stack
-            </div>
-            <ul style="font-size:0.85rem; color:#334155; line-height:1.6;">
-                <li><strong>Backend Engine:</strong> Python 3.9+ & SQLite with WAL mode.</li>
-                <li><strong>AI Extraction:</strong> Google Gemini 2.0/1.5 Flash via official Google GenAI SDK.</li>
-                <li><strong>Schema Validation:</strong> Pydantic v2 (Strict typing, no loose coercion).</li>
-                <li><strong>Rules Engine:</strong> Pure deterministic Python (Zero LLM drift).</li>
-                <li><strong>User Interface:</strong> Streamlit with custom enterprise SaaS theme.</li>
-                <li><strong>Reliability Fallback:</strong> Deterministic Demo Mode for zero-quota environments.</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with tc2:
-        st.markdown("""
-        <div class="iq-card">
-            <div class="iq-card-title">
-                <span>🔒</span> Privacy & Compliance Guardrails
-            </div>
-            <ul style="font-size:0.85rem; color:#334155; line-height:1.6;">
-                <li><strong>Non-Clinical Scope:</strong> FeedbackIQ evaluates purely administrative and operational variables. It does NOT make clinical diagnoses or medical decisions.</li>
-                <li><strong>Synthetic Demo Data:</strong> No real patient health records (PHI), Turkish National IDs (TCKN), or private phone numbers are stored.</li>
-                <li><strong>No Model Training:</strong> Prompt data is not retained for model training.</li>
-                <li><strong>Auditable History:</strong> Every re-evaluation and CSR contact attempt is stamped and logged in SQLite.</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)

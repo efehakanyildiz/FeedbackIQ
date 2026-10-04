@@ -1,10 +1,18 @@
 """
 Synthetic seed data generator for FeedbackIQ.
-Seeds 10+ realistic demo cases spanning varied channels, issue types, and quality states.
+Seeds 11 realistic demo cases demonstrating all 3 triage tiers:
+- Tier 1: Approved / Ready for Workflow (Sufficient data)
+- Tier 2: AI Voice Bot Follow-up (Minor missing data)
+- Tier 3: Customer Service Escalation (Major missing data)
 """
 
 from feedbackiq.database.db import init_db
-from feedbackiq.database.repository import save_case, count_cases, add_follow_up_entry, update_case_after_reevaluation
+from feedbackiq.database.repository import (
+    save_case,
+    count_cases,
+    add_follow_up_entry,
+    update_case_after_reevaluation,
+)
 from feedbackiq.models.schemas import (
     ExtractedFeedbackData,
     FeedbackType,
@@ -18,26 +26,28 @@ from feedbackiq.services.completeness_service import evaluate_completeness
 
 SEED_CASES = [
     {
+        # Tier 2: Minor missing data (Only time and unit missing, hospital is known)
         "case_id": "FB-2026-1001",
         "created_at": "2026-10-01 09:15:00",
         "source_channel": SourceChannel.QR_CODE.value,
-        "original_feedback": "I waited almost an hour yesterday and nobody told me why.",
+        "original_feedback": "I visited Example Hospital yesterday and waited almost an hour. Nobody told me why.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.WAITING_TIME,
             sentiment=SentimentType.NEGATIVE,
-            hospital=None,
+            hospital="Example Hospital",
             department=None,
             incident_date="yesterday",
             approximate_time=None,
             service_type=None,
             description_of_event="Waited for almost an hour with zero communication regarding the delay.",
-            extracted_summary="Patient experienced unexplained delay of nearly an hour.",
-            extraction_confidence=0.86
+            extracted_summary="Delay of nearly an hour at Example Hospital.",
+            extraction_confidence=0.88
         ),
-        "contact_status": ContactStatus.NOT_CONTACTED.value
+        "contact_status": ContactStatus.AI_CALL_PENDING.value
     },
     {
+        # Tier 1: Sufficient data -> Approved
         "case_id": "FB-2026-1002",
         "created_at": "2026-10-01 11:30:00",
         "source_channel": SourceChannel.WEBSITE.value,
@@ -58,6 +68,7 @@ SEED_CASES = [
         "contact_status": ContactStatus.COMPLETED.value
     },
     {
+        # Tier 1: Appreciation -> Approved
         "case_id": "FB-2026-1003",
         "created_at": "2026-10-02 14:10:00",
         "source_channel": SourceChannel.CALL_CENTER.value,
@@ -77,10 +88,11 @@ SEED_CASES = [
         "contact_status": ContactStatus.COMPLETED.value
     },
     {
+        # Tier 3: Major missing data (Hospital unknown, amount unknown, transaction context vague)
         "case_id": "FB-2026-1004",
         "created_at": "2026-10-02 16:45:00",
         "source_channel": SourceChannel.WEBSITE.value,
-        "original_feedback": "I was charged twice for the same service yesterday.",
+        "original_feedback": "I was charged twice for the same service yesterday and need someone to call me.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.BILLING_PAYMENT,
@@ -93,9 +105,10 @@ SEED_CASES = [
             extracted_summary="Duplicate charge reported without facility details.",
             extraction_confidence=0.88
         ),
-        "contact_status": ContactStatus.CONTACT_ATTEMPTED.value
+        "contact_status": ContactStatus.CSR_CONTACT_ATTEMPTED.value
     },
     {
+        # Tier 1: Facility Cleanliness -> Approved
         "case_id": "FB-2026-1005",
         "created_at": "2026-10-03 08:20:00",
         "source_channel": SourceChannel.QR_CODE.value,
@@ -114,10 +127,11 @@ SEED_CASES = [
         "contact_status": ContactStatus.COMPLETED.value
     },
     {
+        # Tier 3: Major missing data (No hospital, no department, no date)
         "case_id": "FB-2026-1006",
         "created_at": "2026-10-03 10:05:00",
         "source_channel": SourceChannel.EMAIL.value,
-        "original_feedback": "My appointment was cancelled but I was not informed.",
+        "original_feedback": "My appointment was cancelled but I was not informed at all.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.APPOINTMENT,
@@ -132,6 +146,7 @@ SEED_CASES = [
         "contact_status": ContactStatus.NOT_CONTACTED.value
     },
     {
+        # Tier 2: Minor missing data (Hospital and staff role known, exact desk/clinic missing)
         "case_id": "FB-2026-1007",
         "created_at": "2026-10-03 13:50:00",
         "source_channel": SourceChannel.SOCIAL_MEDIA.value,
@@ -149,29 +164,31 @@ SEED_CASES = [
             extracted_summary="Staff behavior complaint regarding registration desk.",
             extraction_confidence=0.90
         ),
-        "contact_status": ContactStatus.CONTACT_ATTEMPTED.value
+        "contact_status": ContactStatus.AI_CALL_PENDING.value
     },
     {
+        # Tier 2: Minor missing data (Suggestion has general idea, minor branch context needed)
         "case_id": "FB-2026-1008",
         "created_at": "2026-10-04 09:10:00",
         "source_channel": SourceChannel.WEBSITE.value,
-        "original_feedback": "I think the hospital should provide better parking guidance and clearer lane arrows.",
+        "original_feedback": "I think Example Hospital should provide clearer parking guidance and arrows.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.SUGGESTION,
             issue_type=IssueType.PARKING_TRANSPORTATION,
             sentiment=SentimentType.NEUTRAL,
-            hospital=None,
+            hospital="Example Hospital",
             description_of_event="Proposes enhanced visual wayfinding and lane signage in multi-story parking structure.",
             extracted_summary="Suggestion for clearer parking wayfinding signs.",
             extraction_confidence=0.91
         ),
-        "contact_status": ContactStatus.NOT_CONTACTED.value
+        "contact_status": ContactStatus.AI_CALL_PENDING.value
     },
     {
+        # Tier 3: Major missing data (No hospital, terminal error details vague)
         "case_id": "FB-2026-1009",
         "created_at": "2026-10-04 14:40:00",
         "source_channel": SourceChannel.QR_CODE.value,
-        "original_feedback": "I could not complete payment because the payment terminal repeatedly failed at the cashier.",
+        "original_feedback": "I could not complete payment because the payment terminal repeatedly failed.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.TECHNICAL_ISSUE,
@@ -184,9 +201,10 @@ SEED_CASES = [
             extracted_summary="POS payment terminal failure during patient checkout.",
             extraction_confidence=0.87
         ),
-        "contact_status": ContactStatus.NO_RESPONSE.value
+        "contact_status": ContactStatus.NOT_CONTACTED.value
     },
     {
+        # Tier 1: Appreciation -> Approved
         "case_id": "FB-2026-1010",
         "created_at": "2026-10-04 17:00:00",
         "source_channel": SourceChannel.CALL_CENTER.value,
@@ -204,29 +222,33 @@ SEED_CASES = [
         "contact_status": ContactStatus.COMPLETED.value
     },
     {
-        # Extra Case 11: A case that was previously incomplete, followed up, and now Ready for Workflow
+        # Tier 2 resolved via simulated AI Voice Call
         "case_id": "FB-2026-1011",
         "created_at": "2026-09-30 15:20:00",
         "source_channel": SourceChannel.CALL_CENTER.value,
-        "original_feedback": "I had a delay with my blood test results last Tuesday.",
+        "original_feedback": "I had a delay with my blood test results last Tuesday at Example Hospital.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.WAITING_TIME,
             sentiment=SentimentType.NEGATIVE,
-            hospital=None,
+            hospital="Example Hospital",
             department=None,
             incident_date="last Tuesday",
             service_type="Blood test",
-            description_of_event="Phlebotomy test results took 6 hours instead of promised 2 hours.",
+            description_of_event="Phlebotomy test results delayed.",
             extracted_summary="Laboratory turnaround delay for blood test.",
-            extraction_confidence=0.85
+            extraction_confidence=0.87
         ),
-        "contact_status": ContactStatus.INFO_COLLECTED.value,
-        "reevaluation_data": {
-            "hospital": "Example Hospital Central",
+        "contact_status": ContactStatus.AI_CALL_COMPLETED.value,
+        "ai_call_data": {
             "department": "Biochemistry Laboratory",
             "approximate_time": "10:30 AM"
-        }
+        },
+        "transcript": (
+            "AI AGENT: Hello, this is Example Hospital Automated Experience Service. We are reviewing your blood test turnaround delay from last Tuesday. Could you confirm which lab unit took your sample?\n"
+            "PATIENT: It was the main Biochemistry Laboratory on the 2nd floor, around 10:30 AM.\n"
+            "AI AGENT: Thank you, we have logged this detail for the lab supervisor. Have a great day!"
+        )
     }
 ]
 
@@ -248,24 +270,25 @@ def seed_database(force: bool = False) -> int:
         case_dict["source_channel"] = item["source_channel"]
         case_dict["original_feedback"] = item["original_feedback"]
         case_dict["contact_status"] = item["contact_status"]
+        if "transcript" in item:
+            case_dict["ai_call_transcript"] = item["transcript"]
 
         save_case(case_dict, result)
         inserted += 1
 
-        # Simulate follow-up history and re-evaluation for case 1011
-        if "reevaluation_data" in item:
+        # Simulate completed AI call for case 1011
+        if "ai_call_data" in item:
             add_follow_up_entry(
                 case_id=item["case_id"],
-                contact_status=ContactStatus.INFO_COLLECTED.value,
-                additional_information="Patient confirmed hospital was Example Hospital Central, Biochemistry Lab at 10:30 AM.",
-                notes="Patient was reachable by phone; provided lab barcode."
+                contact_status=ContactStatus.AI_CALL_COMPLETED.value,
+                additional_information="AI Voice Call completed successfully. Captured Biochemistry Lab, 10:30 AM.",
+                notes="Automated voice call duration: 52s."
             )
-            # Re-evaluate
-            overrides = item["reevaluation_data"]
+            overrides = item["ai_call_data"]
             reeval_res = evaluate_completeness(ext, confirmed_overrides=overrides)
             update_case_after_reevaluation(
                 case_id=item["case_id"],
-                updated_fields=overrides,
+                updated_fields={**overrides, "ai_call_transcript": item["transcript"]},
                 result=reeval_res,
                 extracted_json=ext.model_dump_json()
             )

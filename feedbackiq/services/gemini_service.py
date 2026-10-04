@@ -204,20 +204,32 @@ def extract_feedback_info(
 
         prompt += "\nExtract structured JSON adhering strictly to the schema. Do not invent details."
 
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTION,
-                temperature=0.1,
-                response_mime_type="application/json",
-                response_schema=ExtractedFeedbackData,
-            )
-        )
+        candidate_models = [model_name, "gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.8-flash"]
+        seen_models = set()
+        models_to_try = [m for m in candidate_models if not (m in seen_models or seen_models.add(m))]
 
-        raw_json = response.text
-        parsed = ExtractedFeedbackData.model_validate_json(raw_json)
-        return parsed, True, None
+        last_err = None
+        for m in models_to_try:
+            try:
+                response = client.models.generate_content(
+                    model=m,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION,
+                        temperature=0.1,
+                        response_mime_type="application/json",
+                        response_schema=ExtractedFeedbackData,
+                    )
+                )
+
+                raw_json = response.text
+                parsed = ExtractedFeedbackData.model_validate_json(raw_json)
+                return parsed, True, None
+            except Exception as candidate_err:
+                last_err = candidate_err
+                continue
+
+        raise last_err or Exception("All candidate models failed.")
 
     except Exception as e:
         error_msg = f"Gemini API request failed ({type(e).__name__}: {str(e)[:120]}). Falling back to deterministic analysis."

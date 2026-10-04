@@ -1,6 +1,8 @@
 """
-Deterministic Python Rules Engine for Completeness Evaluation.
-Evaluates structured feedback data against explicit business rules.
+Deterministic Python Rules Engine for Completeness Evaluation and 3-Tier Triage:
+1. Tier 1: Sufficient Data -> Approved / Ready for Workflow
+2. Tier 2: Minor Missing Data -> Automated AI Voice Call Scheduled
+3. Tier 3: Major Missing Data -> Human Customer Service Escalation
 """
 
 from typing import Dict, Any, List, Tuple
@@ -8,6 +10,7 @@ from feedbackiq.models.schemas import (
     ExtractedFeedbackData,
     CompletenessResult,
     CompletenessStatus,
+    TriageTier,
     FollowUpPriority,
     MissingFieldItem,
 )
@@ -41,20 +44,16 @@ def evaluate_completeness(
     confirmed_overrides: Dict[str, Any] = None
 ) -> CompletenessResult:
     """
-    Perform deterministic evaluation of structured feedback data.
-    Does not use Gemini for scoring decisions.
+    Perform deterministic evaluation and 3-tier classification.
     
-    Args:
-        data: Extracted feedback data from Gemini or mock.
-        confirmed_overrides: Optional manually entered and verified values from CSR.
-    
-    Returns:
-        CompletenessResult with score, status, missing fields, questions and explanation.
+    Triage Rules:
+    - Tier 1 (Approved): Score >= 80 and no critical fields missing.
+    - Tier 2 (AI Voice Call): Score >= 50 and <= 2 missing fields (minor operational gaps).
+    - Tier 3 (CSR Escalation): Score < 50 or multiple critical fields missing.
     """
     if confirmed_overrides is None:
         confirmed_overrides = {}
 
-    # Merge data with manual overrides taking strict precedence
     merged_data: Dict[str, Any] = data.model_dump()
     for k, v in confirmed_overrides.items():
         if _is_value_present(v):
@@ -77,22 +76,17 @@ def evaluate_completeness(
     or_fields_evaluated = set()
     for group in or_groups:
         group_weights = [weights.get(f, 0) for f in group]
-        max_group_weight = max(group_weights) if group_weights else 0
         sum_group_weight = sum(group_weights)
-        
         present_in_group = [f for f in group if _is_value_present(merged_data.get(f))]
         for f in group:
             or_fields_evaluated.add(f)
-            
+
         if present_in_group:
-            # At least one field in OR group is satisfied
-            # Award points for the group
             score += sum_group_weight
             for f in present_in_group:
                 score_breakdown[f] = weights.get(f, 0)
                 detected_fields[f] = merged_data[f]
         else:
-            # Neither is present - add group representation to missing fields
             primary_field = group[0]
             missing_fields_set.add(primary_field)
             for f in group:
@@ -130,11 +124,12 @@ def evaluate_completeness(
     else:
         normalized_score = 50
 
-    # Sort missing fields predictably
     sorted_missing = sorted(list(missing_fields_set))
     sorted_critical = sorted(list(critical_missing_set))
+    missing_count = len(sorted_missing)
+    critical_count = len(sorted_critical)
 
-    # Build rich missing field items with questions
+    # Build missing field items with questions
     missing_items: List[MissingFieldItem] = []
     for f in sorted_missing:
         is_crit = f in sorted_critical
@@ -148,45 +143,62 @@ def evaluate_completeness(
             )
         )
 
-    # Determine status based on score AND critical missing fields
-    if len(sorted_critical) == 0 and normalized_score >= THRESHOLD_COMPLETE:
-        status = CompletenessStatus.COMPLETE
+    # 3-Tier Triage Classification Logic
+    if missing_count == 0 or (critical_count == 0 and normalized_score >= 95):
+        # Tier 1: Sufficient Data -> Approved
+        triage_tier = TriageTier.TIER_1_APPROVED
+        status = CompletenessStatus.APPROVED
         is_complete = True
-    elif len(sorted_critical) == 0 and normalized_score >= THRESHOLD_NEEDS_REVIEW:
-        status = CompletenessStatus.NEEDS_REVIEW
-        is_complete = False
-    else:
-        status = CompletenessStatus.FOLLOW_UP_REQUIRED
-        is_complete = False
-
-    # Determine follow-up priority (Customer Service Follow-up Priority, not medical)
-    feedback_type = merged_data.get("feedback_type", "complaint")
-    if normalized_score < 50 or (feedback_type == "complaint" and len(sorted_critical) >= 2):
-        follow_up_priority = FollowUpPriority.HIGH
-    elif feedback_type in ["appreciation", "suggestion"] and normalized_score >= 60:
+        requires_ai_call = False
+        requires_csr_escalation = False
+        triage_reason = "Sufficient operational data present. Approved for direct workflow routing."
         follow_up_priority = FollowUpPriority.LOW
-    else:
+
+    elif normalized_score >= 50 and missing_count <= 2 and critical_count <= 1:
+        # Tier 2: Minor Missing Data -> AI Voice Bot Follow-up Call
+        triage_tier = TriageTier.TIER_2_AI_CALL
+        status = CompletenessStatus.AI_CALL_SCHEDULED
+        is_complete = False
+        requires_ai_call = True
+        requires_csr_escalation = False
+        missing_names = [get_field_display_name(f) for f in sorted_missing]
+        triage_reason = (
+            f"Minor operational gap ({', '.join(missing_names)}). "
+            "Assigned to automated AI Voice Agent for targeted telephone verification."
+        )
         follow_up_priority = FollowUpPriority.MEDIUM
 
-    # Build why_needed explanation
-    if is_complete:
-        why_explanation = "The feedback record contains all operational details (facility, unit, time context, and event description) required to investigate and resolve the case immediately."
     else:
-        base_desc = rule_config.get("explanation", "Operational details are required for institutional investigation.")
+        # Tier 3: Major Missing Data -> Human Customer Service Escalation
+        triage_tier = TriageTier.TIER_3_CSR_ESCALATION
+        status = CompletenessStatus.CSR_ESCALATION
+        is_complete = False
+        requires_ai_call = False
+        requires_csr_escalation = True
         missing_names = [get_field_display_name(f) for f in sorted_missing]
-        if missing_names:
-            why_explanation = (
-                f"{base_desc} Currently missing: {', '.join(missing_names)}. "
-                "Contacting the patient to capture these specifics will ensure the unit team can investigate without delays."
-            )
-        else:
-            why_explanation = base_desc
+        triage_reason = (
+            f"Multiple critical gaps ({', '.join(missing_names) if missing_names else 'insufficient context'}). "
+            "Escalated to human Customer Service Representative for manual investigation."
+        )
+        follow_up_priority = FollowUpPriority.HIGH
+
+    # Build why_needed explanation
+    base_desc = rule_config.get("explanation", "Operational details are required for institutional investigation.")
+    if is_complete:
+        why_explanation = "The feedback record contains all operational details required to investigate and resolve the case immediately."
+    else:
+        missing_names = [get_field_display_name(f) for f in sorted_missing]
+        why_explanation = f"{base_desc} Missing variables: {', '.join(missing_names)}. {triage_reason}"
 
     return CompletenessResult(
         completeness_score=normalized_score,
+        triage_tier=triage_tier,
         status=status,
+        triage_reason=triage_reason,
         follow_up_priority=follow_up_priority,
         is_complete=is_complete,
+        requires_ai_call=requires_ai_call,
+        requires_csr_escalation=requires_csr_escalation,
         missing_fields=sorted_missing,
         critical_missing_fields=sorted_critical,
         missing_field_items=missing_items,

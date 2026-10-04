@@ -14,13 +14,13 @@ from feedbackiq.database.repository import (
 )
 from feedbackiq.services.followup_service import process_case_reevaluation
 from feedbackiq.config.question_templates import get_field_display_name, get_question_for_field
-from feedbackiq.models.schemas import ContactStatus, CompletenessStatus
-from feedbackiq.utils.helpers import render_status_pill, render_priority_pill, render_score_badge
+from feedbackiq.models.schemas import ContactStatus
+from feedbackiq.utils.helpers import render_tier_badge, render_score_badge, render_priority_badge
 
 
 def render_case_details_page():
-    st.markdown('<div class="app-brand-badge">Case Investigation Workspace</div>', unsafe_allow_html=True)
-    st.title("Case Details & Follow-up Action")
+    st.markdown('<div class="app-brand-badge">Investigation Workspace</div>', unsafe_allow_html=True)
+    st.title("Case Investigation & Resolution")
 
     # Case Selector
     all_cases = get_cases(sort_by="score_asc")
@@ -34,10 +34,10 @@ def render_case_details_page():
         default_case_id = case_ids[0]
 
     selected_case_id = st.selectbox(
-        "Select Feedback Case to Review",
+        "Select Feedback Case",
         case_ids,
         index=case_ids.index(default_case_id),
-        format_func=lambda cid: f"{cid} — {next(c['issue_type'] for c in all_cases if c['case_id'] == cid)} ({next(c['completeness_score'] for c in all_cases if c['case_id'] == cid)}/100, {next(c['status'] for c in all_cases if c['case_id'] == cid)})"
+        format_func=lambda cid: f"{cid} — {next(c['issue_type'] for c in all_cases if c['case_id'] == cid)} ({next(c['completeness_score'] for c in all_cases if c['case_id'] == cid)}/100, Tier: {next(c.get('triage_tier', 'CSR Review') for c in all_cases if c['case_id'] == cid)})"
     )
 
     st.session_state["selected_case_id"] = selected_case_id
@@ -46,20 +46,20 @@ def render_case_details_page():
         st.error("Case record not found.")
         return
 
-    # Check for recent re-evaluation celebration in session state
+    # Check for recent re-evaluation confirmation
     reeval_info = st.session_state.get(f"reeval_done_{selected_case_id}")
     if reeval_info:
         st.markdown(f"""
-        <div class="notice-box notice-success" style="padding:1.2rem; margin-bottom:1.5rem;">
-            <div style="font-size:1.15rem; font-weight:700; color:#065f46; margin-bottom:6px;">
-                🎉 Feedback Successfully Completed!
+        <div class="notice-box notice-success" style="padding:1.1rem; margin-bottom:1.2rem;">
+            <div style="font-size:1.05rem; font-weight:700; color:#065f46; margin-bottom:4px;">
+                Record Verified & Ready for Operational Dispatch
             </div>
-            <div style="font-size:0.95rem; color:#064e3b; margin-bottom:8px;">
-                Score improved from <strong>{reeval_info['prev_score']}</strong> to <strong style="font-size:1.1rem; color:#047857;">{reeval_info['new_score']} / 100</strong>.
-                All critical operational details have been captured and validated.
+            <div style="font-size:0.88rem; color:#064e3b; margin-bottom:6px;">
+                Completeness score improved from <strong>{reeval_info['prev_score']}</strong> to <strong style="color:#047857;">{reeval_info['new_score']} / 100</strong>.
+                All required operational variables have been confirmed.
             </div>
-            <div style="background:#ffffff; border:1px solid #a7f3d0; border-radius:6px; padding:8px 12px; font-weight:600; color:#047857; display:inline-block;">
-                Ready for Existing Feedback Workflow
+            <div style="background:#ffffff; border:1px solid #a7f3d0; border-radius:4px; padding:6px 10px; font-size:0.8rem; font-weight:700; color:#047857; display:inline-block;">
+                Ready for Normal Case Management Workflow
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -67,16 +67,16 @@ def render_case_details_page():
     # Top Case Status Bar
     score = case["completeness_score"]
     st.markdown(f"""
-    <div class="iq-card" style="margin-bottom:1.5rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div class="iq-card" style="margin-bottom:1.2rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div>
-                <span style="font-size:1.4rem; font-weight:800; color:#0f172a; margin-right:12px;">Case {case['case_id']}</span>
-                <span style="color:#64748b; font-size:0.85rem; margin-right:12px;">Logged on {case['created_at']} via {case['source_channel']}</span>
+                <span style="font-size:1.3rem; font-weight:800; color:#0f172a; margin-right:12px;">Case {case['case_id']}</span>
+                <span style="color:#64748b; font-size:0.82rem;">Ingested on {case['created_at']} via {case['source_channel']}</span>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
                 {render_score_badge(score)}
-                {render_priority_pill(case['follow_up_priority'])}
-                {render_status_pill(case['status'])}
+                {render_tier_badge(case.get('triage_tier', 'Customer Service Review'))}
+                {render_priority_badge(case['follow_up_priority'])}
             </div>
         </div>
     </div>
@@ -85,18 +85,16 @@ def render_case_details_page():
     # Original Feedback Display
     st.markdown("""
     <div class="iq-card">
-        <div class="iq-card-title">
-            <span>📝</span> Original Patient Feedback (Unmodified)
-        </div>
+        <div class="iq-card-title">Original Patient Narrative</div>
     """, unsafe_allow_html=True)
     st.markdown(f"""
-    <div style="background:#f8fafc; border-left:4px solid #3b82f6; padding:1rem 1.25rem; border-radius:6px; font-size:0.95rem; color:#1e293b; line-height:1.5;">
+    <div style="background:#f8fafc; border-left:3px solid #2563eb; padding:0.9rem 1.1rem; border-radius:4px; font-size:0.92rem; color:#1e293b; line-height:1.5;">
         "{case['original_feedback']}"
     </div>
-    <div style="margin-top:10px; font-size:0.8rem; color:#64748b;">
-        <strong>AI Extraction Summary:</strong> {case['extracted_summary'] or 'N/A'} &bull; 
+    <div style="margin-top:8px; font-size:0.78rem; color:#64748b;">
+        <strong>Summary:</strong> {case['extracted_summary'] or 'N/A'} &bull; 
         <strong>Sentiment:</strong> {case['sentiment'].title()} &bull; 
-        <strong>Issue Category:</strong> {case['issue_type']}
+        <strong>Category:</strong> {case['issue_type']}
     </div>
     </div>
     """, unsafe_allow_html=True)
@@ -107,9 +105,7 @@ def render_case_details_page():
     with c1:
         st.markdown("""
         <div class="iq-card">
-            <div class="iq-card-title">
-                <span>🔍</span> Known / Detected Information
-            </div>
+            <div class="iq-card-title">Known Operational Parameters</div>
         """, unsafe_allow_html=True)
 
         fields_to_show = [
@@ -121,13 +117,13 @@ def render_case_details_page():
             ("Staff Role", case["staff_role"]),
             ("Staff Name", case["staff_name"]),
             ("Billing Context", case["billing_context"]),
-            ("Description", case["description_of_event"]),
+            ("Event Description", case["description_of_event"]),
         ]
 
         for label, val in fields_to_show:
-            val_html = f"<strong style='color:#0f172a;'>{val}</strong>" if val else "<span style='color:#94a3b8; font-style:italic;'>Not detected</span>"
+            val_html = f"<strong style='color:#0f172a;'>{val}</strong>" if val else "<span style='color:#94a3b8; font-style:italic;'>Not specified</span>"
             st.markdown(f"""
-            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f8fafc; font-size:0.85rem;">
+            <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #f8fafc; font-size:0.83rem;">
                 <span style="color:#64748b;">{label}</span>
                 <span style="text-align:right; max-width:65%;">{val_html}</span>
             </div>
@@ -138,9 +134,7 @@ def render_case_details_page():
     with c2:
         st.markdown("""
         <div class="iq-card">
-            <div class="iq-card-title">
-                <span>❓</span> Missing Information & Suggested Questions
-            </div>
+            <div class="iq-card-title">Missing Parameters & Outreach Prompts</div>
         """, unsafe_allow_html=True)
 
         missing_fields = get_missing_fields_for_case(selected_case_id)
@@ -149,22 +143,18 @@ def render_case_details_page():
                 f_name = item["field_name"]
                 d_name = get_field_display_name(f_name)
                 question = get_question_for_field(f_name)
-                crit_tag = "<span style='background:#fee2e2; color:#b91c1c; font-size:0.7rem; font-weight:700; padding:1px 6px; border-radius:4px;'>REQUIRED</span>" if item["is_critical"] else "<span style='background:#f1f5f9; color:#64748b; font-size:0.7rem; padding:1px 6px; border-radius:4px;'>CONTEXT</span>"
+                crit_tag = "<span style='background:#fee2e2; color:#991b1b; font-size:0.68rem; font-weight:700; padding:1px 5px; border-radius:3px;'>CRITICAL</span>" if item["is_critical"] else "<span style='background:#f1f5f9; color:#475569; font-size:0.68rem; font-weight:600; padding:1px 5px; border-radius:3px;'>MINOR</span>"
 
                 st.markdown(f"""
-                <div style="margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #f8fafc; font-size:0.85rem;">
-                    <div style="margin-bottom:3px;">
-                        <strong style="color:#334155;">{d_name}</strong> {crit_tag}
-                    </div>
-                    <div style="color:#2563eb; font-weight:500;">
-                        "{question}"
-                    </div>
+                <div style="margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid #f8fafc; font-size:0.83rem;">
+                    <div><strong style="color:#334155;">{d_name}</strong> {crit_tag}</div>
+                    <div style="color:#4338ca; margin-top:2px;">Prompt: "{question}"</div>
                 </div>
                 """, unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div style="color:#059669; font-weight:600; padding:15px 0;">
-                ✅ All operational requirements met. No pending questions.
+            <div style="color:#047857; font-weight:600; font-size:0.86rem; padding:10px 0;">
+                All operational requirements met. Ready for dispatch.
             </div>
             """, unsafe_allow_html=True)
 
@@ -172,12 +162,12 @@ def render_case_details_page():
 
     # Customer Service Action & Re-evaluation Form
     st.markdown("""
-    <div class="iq-card" style="border: 2px solid #e0e7ff;">
-        <div class="iq-card-title" style="color:#3730a3;">
-            <span>📞</span> Customer Service Follow-up & Case Re-evaluation
+    <div class="iq-card" style="border: 1px solid #cbd5e1;">
+        <div class="iq-card-title" style="color:#1e293b;">
+            Customer Service Investigation & Re-evaluation
         </div>
-        <p style="font-size:0.85rem; color:#475569; margin-top:-6px; margin-bottom:15px;">
-            Log contact outreach and input confirmed patient responses. When re-evaluated, confirmed values strictly override prior AI guesses.
+        <p style="font-size:0.83rem; color:#475569; margin-top:-6px; margin-bottom:12px;">
+            Log contact outreach and input confirmed patient responses. Confirmed values strictly take precedence over initial inferences.
         </p>
     """, unsafe_allow_html=True)
 
@@ -185,11 +175,11 @@ def render_case_details_page():
     with act_col1:
         contact_options = [c.value for c in ContactStatus]
         curr_contact_idx = contact_options.index(case["contact_status"]) if case["contact_status"] in contact_options else 0
-        new_contact_status = st.selectbox("Update Contact Status", contact_options, index=curr_contact_idx)
+        new_contact_status = st.selectbox("Update Outreach Status", contact_options, index=curr_contact_idx)
     with act_col2:
-        csr_notes = st.text_input("CSR Outreach Notes", placeholder="e.g. Spoke with patient on phone; confirmed exact visit location.")
+        csr_notes = st.text_input("Representative Outreach Notes", placeholder="e.g. Telephoned patient; confirmed cardiology appointment delay.")
 
-    st.markdown("<p style='font-size:0.88rem; font-weight:600; color:#334155; margin-top:10px;'>Confirmed Operational Information (Fill in missing values):</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:0.8rem; font-weight:700; color:#334155; text-transform:uppercase; letter-spacing:0.04em; margin-top:8px;'>Input Confirmed Operational Details:</p>", unsafe_allow_html=True)
 
     inp_c1, inp_c2, inp_c3 = st.columns(3)
     with inp_c1:
@@ -199,13 +189,13 @@ def render_case_details_page():
         confirmed_date = st.text_input("Incident Date", value=case["incident_date"] or "", placeholder="e.g. 2026-10-03")
         confirmed_time = st.text_input("Approximate Time", value=case["approximate_time"] or "", placeholder="e.g. 14:00")
     with inp_c3:
-        confirmed_service = st.text_input("Service / Exam", value=case["service_type"] or "", placeholder="e.g. Blood Test, MRI, Consult")
-        confirmed_staff = st.text_input("Staff Role / Name", value=f"{case['staff_role'] or ''} {case['staff_name'] or ''}".strip(), placeholder="e.g. Nurse Jane, Receptionist")
+        confirmed_service = st.text_input("Service / Exam", value=case["service_type"] or "", placeholder="e.g. Specialist Consult, MRI")
+        confirmed_staff = st.text_input("Staff Role / Name", value=f"{case['staff_role'] or ''} {case['staff_name'] or ''}".strip(), placeholder="e.g. Nurse Jane")
 
-    reeval_clicked = st.button("⚡ Re-evaluate Case Completeness", type="primary", use_container_width=False)
+    reeval_clicked = st.button("Re-evaluate Case Completeness", type="primary", use_container_width=False)
 
     if reeval_clicked:
-        with st.spinner("Re-evaluating case with confirmed information..."):
+        with st.spinner("Re-evaluating case with confirmed parameters..."):
             confirmed_dict = {}
             if confirmed_hospital.strip():
                 confirmed_dict["hospital"] = confirmed_hospital.strip()
@@ -237,12 +227,10 @@ def render_case_details_page():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Follow-up History Log
+    # Outreach Log
     st.markdown("""
     <div class="iq-card">
-        <div class="iq-card-title">
-            <span>📜</span> Follow-up & Outreach History
-        </div>
+        <div class="iq-card-title">Outreach History & Audit Trail</div>
     """, unsafe_allow_html=True)
 
     history_entries = get_follow_up_entries(selected_case_id)
@@ -258,6 +246,6 @@ def render_case_details_page():
         df_hist = pd.DataFrame(hist_rows)
         st.dataframe(df_hist, use_container_width=True, hide_index=True)
     else:
-        st.write("No prior outreach entries logged for this case.")
+        st.write("No outreach logs recorded.")
 
     st.markdown("</div>", unsafe_allow_html=True)

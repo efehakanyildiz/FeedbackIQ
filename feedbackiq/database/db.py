@@ -64,11 +64,27 @@ def init_db() -> None:
             extracted_summary TEXT,
             extraction_confidence REAL DEFAULT 0.8,
             completeness_score INTEGER DEFAULT 0,
+            triage_tier TEXT NOT NULL DEFAULT 'Customer Service Review',
             status TEXT NOT NULL,
             follow_up_priority TEXT NOT NULL,
             contact_status TEXT NOT NULL,
+            ai_call_transcript TEXT,
             updated_at TEXT NOT NULL
         );
+
+        -- Safe column migrations if database already exists
+        """)
+        try:
+            conn.execute("ALTER TABLE feedback_cases ADD COLUMN triage_tier TEXT NOT NULL DEFAULT 'Customer Service Review';")
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            conn.execute("ALTER TABLE feedback_cases ADD COLUMN ai_call_transcript TEXT;")
+        except sqlite3.OperationalError:
+            pass
+
+        conn.executescript("""
 
         CREATE INDEX IF NOT EXISTS idx_cases_status ON feedback_cases(status);
         CREATE INDEX IF NOT EXISTS idx_cases_issue_type ON feedback_cases(issue_type);

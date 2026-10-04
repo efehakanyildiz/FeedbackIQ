@@ -1,12 +1,21 @@
 """
 Database repository providing CRUD and query operations for FeedbackIQ.
+Enhanced for 3-tier triage:
+- Tier 1: Approved / Ready for Workflow
+- Tier 2: AI Voice Bot Call Scheduled
+- Tier 3: Customer Service Escalation
 """
 
 import json
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from feedbackiq.database.db import db_session
-from feedbackiq.models.schemas import CompletenessResult, CompletenessStatus, ContactStatus
+from feedbackiq.models.schemas import (
+    CompletenessResult,
+    CompletenessStatus,
+    ContactStatus,
+    TriageTier,
+)
 
 
 def _now_iso() -> str:
@@ -14,7 +23,7 @@ def _now_iso() -> str:
 
 
 def generate_case_id() -> str:
-    """Generate a clean human-readable sequential or timestamped case ID."""
+    """Generate a clean sequential case ID."""
     with db_session() as conn:
         cursor = conn.execute("SELECT COUNT(*) as cnt FROM feedback_cases;")
         cnt = cursor.fetchone()["cnt"]
@@ -22,7 +31,7 @@ def generate_case_id() -> str:
 
 
 def save_case(case_dict: Dict[str, Any], result: CompletenessResult) -> str:
-    """Insert a newly analyzed feedback case along with missing fields and history."""
+    """Insert a newly analyzed feedback case along with triage tier and missing fields."""
     case_id = case_dict.get("case_id") or generate_case_id()
     now_str = _now_iso()
 
@@ -34,8 +43,9 @@ def save_case(case_dict: Dict[str, Any], result: CompletenessResult) -> str:
                 incident_date, approximate_time, service_type, staff_role,
                 staff_name, billing_context, description_of_event, impact,
                 explicit_request, extracted_summary, extraction_confidence,
-                completeness_score, status, follow_up_priority, contact_status, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                completeness_score, triage_tier, status, follow_up_priority,
+                contact_status, ai_call_transcript, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             case_id,
             case_dict.get("created_at", now_str),
@@ -56,11 +66,13 @@ def save_case(case_dict: Dict[str, Any], result: CompletenessResult) -> str:
             case_dict.get("impact"),
             case_dict.get("explicit_request"),
             case_dict.get("extracted_summary", ""),
-            case_dict.get("extraction_confidence", 0.8),
+            case_dict.get("extraction_confidence", 0.85),
             result.completeness_score,
+            result.triage_tier.value,
             result.status.value,
             result.follow_up_priority.value,
             case_dict.get("contact_status", ContactStatus.NOT_CONTACTED.value),
+            case_dict.get("ai_call_transcript"),
             now_str
         ))
 
@@ -71,7 +83,7 @@ def save_case(case_dict: Dict[str, Any], result: CompletenessResult) -> str:
                 VALUES (?, ?, ?, ?)
             """, (case_id, item.field_name, 1 if item.is_critical else 0, 0))
 
-        # Insert initial analysis history
+        # Insert analysis history
         conn.execute("""
             INSERT INTO analysis_history (case_id, created_at, completeness_score, status, extracted_json)
             VALUES (?, ?, ?, ?, ?)
@@ -92,13 +104,14 @@ def get_case(case_id: str) -> Optional[Dict[str, Any]]:
 
 def get_cases(
     status_filter: Optional[str] = None,
+    tier_filter: Optional[str] = None,
     issue_type_filter: Optional[str] = None,
     score_min: Optional[int] = None,
     score_max: Optional[int] = None,
     contact_status_filter: Optional[str] = None,
     sort_by: str = "score_asc"
 ) -> List[Dict[str, Any]]:
-    """Retrieve list of cases with optional filtering and ordering."""
+    """Retrieve list of cases with multi-criteria filtering."""
     query = """
         SELECT c.*, 
                (SELECT COUNT(*) FROM missing_fields m WHERE m.case_id = c.case_id AND m.resolved = 0) as missing_fields_count
@@ -110,6 +123,10 @@ def get_cases(
     if status_filter and status_filter != "All":
         query += " AND c.status = ?"
         params.append(status_filter)
+
+    if tier_filter and tier_filter != "All":
+        query += " AND c.triage_tier = ?"
+        params.append(tier_filter)
 
     if issue_type_filter and issue_type_filter != "All":
         query += " AND c.issue_type = ?"
@@ -151,7 +168,7 @@ def get_missing_fields_for_case(case_id: str) -> List[Dict[str, Any]]:
 
 
 def get_follow_up_entries(case_id: str) -> List[Dict[str, Any]]:
-    """Get CSR contact & follow-up logs for a case."""
+    """Get CSR or AI call interaction logs for a case."""
     with db_session() as conn:
         cursor = conn.execute("""
             SELECT * FROM follow_up_entries WHERE case_id = ? ORDER BY created_at DESC
@@ -165,7 +182,7 @@ def add_follow_up_entry(
     additional_information: str,
     notes: str
 ) -> None:
-    """Log an interaction attempt or collected information from customer service."""
+    """Log an interaction attempt or collected information."""
     now_str = _now_iso()
     with db_session() as conn:
         conn.execute("""
@@ -189,8 +206,9 @@ def update_case_after_reevaluation(
     """Update case with re-evaluated fields, new completeness score, and history entry."""
     now_str = _now_iso()
     
-    # If complete after follow up, mark status as READY_FOR_WORKFLOW
-    new_status = CompletenessStatus.READY_FOR_WORKFLOW.value if result.is_complete else result.status.value
+    # If complete after follow up, mark status as Resolved / Ready for Workflow
+    new_status = CompletenessStatus.RESOLVED.value if result.is_complete else result.status.value
+    new_tier = TriageTier.TIER_1_APPROVED.value if result.is_complete else result.triage_tier.value
 
     with db_session() as conn:
         conn.execute("""
@@ -205,7 +223,9 @@ def update_case_after_reevaluation(
                 billing_context = COALESCE(?, billing_context),
                 description_of_event = COALESCE(?, description_of_event),
                 impact = COALESCE(?, impact),
+                ai_call_transcript = COALESCE(?, ai_call_transcript),
                 completeness_score = ?,
+                triage_tier = ?,
                 status = ?,
                 follow_up_priority = ?,
                 updated_at = ?
@@ -221,7 +241,9 @@ def update_case_after_reevaluation(
             updated_fields.get("billing_context"),
             updated_fields.get("description_of_event"),
             updated_fields.get("impact"),
+            updated_fields.get("ai_call_transcript"),
             result.completeness_score,
+            new_tier,
             new_status,
             result.follow_up_priority.value,
             now_str,
@@ -244,40 +266,47 @@ def update_case_after_reevaluation(
 
 
 def get_kpis() -> Dict[str, Any]:
-    """Calculate dashboard summary KPIs."""
+    """Calculate dashboard summary KPIs based on 3-tier triage."""
     with db_session() as conn:
         total = conn.execute("SELECT COUNT(*) as c FROM feedback_cases;").fetchone()["c"]
         if total == 0:
             return {
                 "total_cases": 0,
-                "complete_cases": 0,
-                "followup_required": 0,
+                "tier_1_approved": 0,
+                "tier_2_ai_call": 0,
+                "tier_3_csr": 0,
                 "avg_score": 0,
                 "open_followups": 0
             }
 
-        complete = conn.execute("""
+        approved = conn.execute("""
             SELECT COUNT(*) as c FROM feedback_cases 
-            WHERE status IN ('Complete', 'Ready for Workflow')
+            WHERE triage_tier = 'Approved' OR status IN ('Approved', 'Resolved / Ready for Workflow')
         """).fetchone()["c"]
 
-        followup = conn.execute("""
+        ai_calls = conn.execute("""
             SELECT COUNT(*) as c FROM feedback_cases 
-            WHERE status = 'Follow-up Required'
+            WHERE triage_tier = 'AI Call Scheduled' AND status = 'AI Call Scheduled'
+        """).fetchone()["c"]
+
+        csr = conn.execute("""
+            SELECT COUNT(*) as c FROM feedback_cases 
+            WHERE triage_tier = 'Customer Service Review' AND status = 'Customer Service Review'
         """).fetchone()["c"]
 
         avg_score = conn.execute("SELECT AVG(completeness_score) as avg_s FROM feedback_cases;").fetchone()["avg_s"]
         
         open_followups = conn.execute("""
             SELECT COUNT(*) as c FROM feedback_cases 
-            WHERE status IN ('Follow-up Required', 'Needs Review') 
-            AND contact_status NOT IN ('Completed', 'Information Collected')
+            WHERE status NOT IN ('Approved', 'Resolved / Ready for Workflow')
+            AND contact_status NOT IN ('Completed', 'AI Call Completed')
         """).fetchone()["c"]
 
         return {
             "total_cases": total,
-            "complete_cases": complete,
-            "followup_required": followup,
+            "tier_1_approved": approved,
+            "tier_2_ai_call": ai_calls,
+            "tier_3_csr": csr,
             "avg_score": round(avg_score or 0, 1),
             "open_followups": open_followups
         }
@@ -286,6 +315,13 @@ def get_kpis() -> Dict[str, Any]:
 def get_analytics_data() -> Dict[str, Any]:
     """Provide structured analytics data for dashboard and analytics page."""
     with db_session() as conn:
+        # Triage Tier distribution
+        tier_rows = conn.execute("""
+            SELECT triage_tier, COUNT(*) as count 
+            FROM feedback_cases 
+            GROUP BY triage_tier
+        """).fetchall()
+
         # Status distribution
         status_rows = conn.execute("""
             SELECT status, COUNT(*) as count 
@@ -298,7 +334,7 @@ def get_analytics_data() -> Dict[str, Any]:
             SELECT source_channel, 
                    COUNT(*) as total_cases, 
                    ROUND(AVG(completeness_score), 1) as avg_score,
-                   SUM(CASE WHEN status IN ('Complete', 'Ready for Workflow') THEN 1 ELSE 0 END) as complete_count
+                   SUM(CASE WHEN status IN ('Approved', 'Resolved / Ready for Workflow') THEN 1 ELSE 0 END) as complete_count
             FROM feedback_cases
             GROUP BY source_channel
             ORDER BY avg_score DESC
@@ -327,10 +363,11 @@ def get_analytics_data() -> Dict[str, Any]:
         # Re-evaluation recovery rate
         recovered = conn.execute("""
             SELECT COUNT(*) as c FROM feedback_cases
-            WHERE status = 'Ready for Workflow'
+            WHERE status = 'Resolved / Ready for Workflow'
         """).fetchone()["c"]
 
         return {
+            "tier_dist": [dict(r) for r in tier_rows],
             "status_dist": [dict(r) for r in status_rows],
             "channel_quality": [dict(r) for r in channel_rows],
             "top_missing": [dict(r) for r in missing_rows],

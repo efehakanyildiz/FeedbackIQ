@@ -1,5 +1,9 @@
 """
 Data models and Pydantic schemas for FeedbackIQ.
+Implements 3-tier intelligent triage:
+- Tier 1: Sufficient Data -> Approved / Ready for Workflow
+- Tier 2: Minor Missing Data -> AI Voice Bot Follow-up
+- Tier 3: Major Missing Data -> Customer Service Escalation
 """
 
 from enum import Enum
@@ -38,11 +42,17 @@ class SentimentType(str, Enum):
     MIXED = "mixed"
 
 
+class TriageTier(str, Enum):
+    TIER_1_APPROVED = "Approved"
+    TIER_2_AI_CALL = "AI Call Scheduled"
+    TIER_3_CSR_ESCALATION = "Customer Service Review"
+
+
 class CompletenessStatus(str, Enum):
-    COMPLETE = "Complete"
-    NEEDS_REVIEW = "Needs Review"
-    FOLLOW_UP_REQUIRED = "Follow-up Required"
-    READY_FOR_WORKFLOW = "Ready for Workflow"
+    APPROVED = "Approved"
+    AI_CALL_SCHEDULED = "AI Call Scheduled"
+    CSR_ESCALATION = "Customer Service Review"
+    RESOLVED = "Resolved / Ready for Workflow"
 
 
 class FollowUpPriority(str, Enum):
@@ -53,8 +63,9 @@ class FollowUpPriority(str, Enum):
 
 class ContactStatus(str, Enum):
     NOT_CONTACTED = "Not Contacted"
-    CONTACT_ATTEMPTED = "Contact Attempted"
-    NO_RESPONSE = "No Response"
+    AI_CALL_PENDING = "AI Call Pending"
+    AI_CALL_COMPLETED = "AI Call Completed"
+    CSR_CONTACT_ATTEMPTED = "CSR Contact Attempted"
     INFO_COLLECTED = "Information Collected"
     COMPLETED = "Completed"
 
@@ -88,54 +99,54 @@ class ExtractedFeedbackData(BaseModel):
     )
     department: Optional[str] = Field(
         default=None,
-        description="Clinical or administrative department (e.g. Cardiology, Emergency, Radiology). Null if not mentioned."
+        description="Clinical or administrative department. Null if not mentioned."
     )
     incident_date: Optional[str] = Field(
         default=None,
-        description="Date of the incident (e.g., 'October 3', 'yesterday', '2026-10-02'). Null if not mentioned."
+        description="Date of the incident. Null if not mentioned."
     )
     approximate_time: Optional[str] = Field(
         default=None,
-        description="Time or time of day of incident (e.g., '14:00', 'morning', 'afternoon'). Null if not mentioned."
+        description="Time or time of day of incident. Null if not mentioned."
     )
     service_type: Optional[str] = Field(
         default=None,
-        description="Specific service or exam (e.g., Blood test, MRI, Outpatient examination). Null if not mentioned."
+        description="Specific service or exam. Null if not mentioned."
     )
     staff_role: Optional[str] = Field(
         default=None,
-        description="Role of staff involved (e.g., Nurse, Doctor, Registration clerk). Null if not mentioned."
+        description="Role of staff involved. Null if not mentioned."
     )
     staff_name: Optional[str] = Field(
         default=None,
-        description="Name of staff member if explicitly mentioned. Null if not mentioned."
+        description="Name of staff member. Null if not mentioned."
     )
     billing_context: Optional[str] = Field(
         default=None,
-        description="Details regarding billing, invoices, payment terminal, or double charges. Null if not mentioned."
+        description="Details regarding billing or payment. Null if not mentioned."
     )
     description_of_event: Optional[str] = Field(
         default=None,
-        description="Concise description of the specific operational incident or praise."
+        description="Concise description of the specific operational incident."
     )
     impact: Optional[str] = Field(
         default=None,
-        description="Impact on the patient (e.g. missed appointment, prolonged pain, financial distress)."
+        description="Impact on the patient."
     )
     explicit_request: Optional[str] = Field(
         default=None,
-        description="Any explicit request or demand made by the patient (e.g. refund, explanation, callback)."
+        description="Any explicit request or demand made by the patient."
     )
     mentioned_entities: List[str] = Field(
         default_factory=list,
-        description="Key entities detected in the text (locations, devices, etc.)"
+        description="Key entities detected in the text"
     )
     extracted_summary: str = Field(
         default="",
         description="One-sentence objective summary of the feedback."
     )
     extraction_confidence: float = Field(
-        default=0.8,
+        default=0.85,
         ge=0.0,
         le=1.0,
         description="Confidence score for information extraction."
@@ -151,11 +162,15 @@ class MissingFieldItem(BaseModel):
 
 
 class CompletenessResult(BaseModel):
-    """Result of deterministic rule-based completeness evaluation."""
+    """Result of deterministic rule-based completeness evaluation & 3-tier triage."""
     completeness_score: int = Field(ge=0, le=100)
+    triage_tier: TriageTier
     status: CompletenessStatus
+    triage_reason: str
     follow_up_priority: FollowUpPriority
     is_complete: bool
+    requires_ai_call: bool
+    requires_csr_escalation: bool
     missing_fields: List[str]
     critical_missing_fields: List[str]
     missing_field_items: List[MissingFieldItem]
@@ -185,9 +200,11 @@ class FeedbackCaseRecord(BaseModel):
     impact: Optional[str] = None
     explicit_request: Optional[str] = None
     extracted_summary: str = ""
-    extraction_confidence: float = 0.8
+    extraction_confidence: float = 0.85
     completeness_score: int = 0
-    status: str = CompletenessStatus.FOLLOW_UP_REQUIRED.value
+    triage_tier: str = TriageTier.TIER_3_CSR_ESCALATION.value
+    status: str = CompletenessStatus.CSR_ESCALATION.value
     follow_up_priority: str = FollowUpPriority.MEDIUM.value
     contact_status: str = ContactStatus.NOT_CONTACTED.value
+    ai_call_transcript: Optional[str] = None
     updated_at: str = ""
