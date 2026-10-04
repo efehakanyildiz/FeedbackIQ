@@ -117,10 +117,11 @@ def evaluate_completeness(
             critical_missing_set.add(crit)
             missing_fields_set.add(crit)
 
-    # Normalize score to max 100
+    # 1. Base Score calculation from weights
     total_possible_weights = sum(weights.values())
     if total_possible_weights > 0:
-        normalized_score = min(100, int(round((score / total_possible_weights) * 100)))
+        raw_score = int(round((score / total_possible_weights) * 100))
+        normalized_score = min(100, max(0, raw_score))
     else:
         normalized_score = 50
 
@@ -128,6 +129,27 @@ def evaluate_completeness(
     sorted_critical = sorted(list(critical_missing_set))
     missing_count = len(sorted_missing)
     critical_count = len(sorted_critical)
+    is_hospital_missing = "hospital" in sorted_missing
+
+    # 2. Score Harmonization and Critical Deficiency Penalty:
+    # A healthcare feedback without a hospital location or with missing critical details cannot be routed to a unit.
+    # Therefore, its score is strictly capped within the Tier 3 range (< 50).
+    # Brackets:
+    # - Tier 1 (Onaylandı): 80 - 100 (tüm kritik alanlar tam, eksiksiz)
+    # - Tier 2 (AI Sesli Arama Botu): 50 - 75 (hastane biliniyor, 1-2 tali detay eksik)
+    # - Tier 3 (Müşteri Hizmetleri Masası): 0 - 45 (hastane yok veya kritik veri eksik)
+    if critical_count >= 2 or missing_count >= 3:
+        normalized_score = min(normalized_score, 30)
+    elif critical_count == 1 or is_hospital_missing:
+        # Missing critical hospital or primary context caps score at 45 (Tier 3)
+        normalized_score = min(normalized_score, 45)
+    elif missing_count in [1, 2]:
+        # Minor operational gap (e.g. approximate time or secondary role missing)
+        normalized_score = min(normalized_score, 75)
+        normalized_score = max(normalized_score, 55)
+    else:
+        # missing_count == 0
+        normalized_score = max(normalized_score, 90)
 
     # Build missing field items with questions
     missing_items: List[MissingFieldItem] = []
@@ -143,21 +165,19 @@ def evaluate_completeness(
             )
         )
 
-    # 3-Tier Triage Classification Logic
-    is_hospital_missing = "hospital" in sorted_missing
-
-    if missing_count == 0 or (critical_count == 0 and normalized_score >= 95):
+    # 3. 3-Tier Triage Classification Logic
+    if missing_count == 0 or (critical_count == 0 and not is_hospital_missing and normalized_score >= 80):
         # Kademe 1: Yeterli Veri -> Onaylandı / Doğrudan İş Akışına Sevk
         triage_tier = TriageTier.TIER_1_APPROVED
         status = CompletenessStatus.APPROVED
         is_complete = True
         requires_ai_call = False
         requires_csr_escalation = False
-        triage_reason = "Yeterli operasyonel veri mevcut. Doğrudan ilgili birim iş akışına onaylandı."
+        triage_reason = "Tüm operasyonel veriler eksiksiz ve doğrulanmıştır. İlgili birim iş akışına onaylandı."
         follow_up_priority = FollowUpPriority.LOW
 
-    elif not is_hospital_missing and normalized_score >= 50 and missing_count <= 2 and critical_count <= 1:
-        # Kademe 2: Küçük Eksiklik (Hastane biliniyor, 1-2 küçük detay eksik) -> AI Sesli Arama Botu
+    elif not is_hospital_missing and critical_count == 0 and 50 <= normalized_score <= 79 and missing_count <= 2:
+        # Kademe 2: Küçük Eksiklik (Hastane ve olay biliniyor, 1-2 tali detay eksik) -> AI Sesli Arama Botu
         triage_tier = TriageTier.TIER_2_AI_CALL
         status = CompletenessStatus.AI_CALL_SCHEDULED
         is_complete = False
@@ -171,7 +191,7 @@ def evaluate_completeness(
         follow_up_priority = FollowUpPriority.MEDIUM
 
     else:
-        # Kademe 3: Kritik Eksik Veri (Hastane belirsiz veya birden çok eksik) -> Müşteri Hizmetleri İncelemesi
+        # Kademe 3: Kritik Eksik Veri (Hastane belirsiz veya birden çok eksik alan var) -> Müşteri Hizmetleri İncelemesi
         triage_tier = TriageTier.TIER_3_CSR_ESCALATION
         status = CompletenessStatus.CSR_ESCALATION
         is_complete = False
