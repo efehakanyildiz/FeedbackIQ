@@ -45,40 +45,48 @@ def simulate_ai_voice_call(
         if not case.get("department"):
             patient_responses["department"] = "Cardiology Clinic"
         if not case.get("hospital"):
-            patient_responses["hospital"] = "Medicana Example Hospital"
+            patient_responses["hospital"] = "Merkez Sağlık Hastanesi"
         if not case.get("service_type"):
             patient_responses["service_type"] = "Specialist Consultation"
 
-    # Construct clean dialogue transcript
+    # Construct clean dialogue transcript in Turkish
     transcript_lines = [
-        f"AI AGENT: Hello, this is the automated Patient Experience Service from {hospital}. We received your feedback regarding your recent visit and would like to ensure our team has enough information to investigate. Do you have a quick moment?",
-        "PATIENT: Yes, sure, go ahead.",
+        f"YAPAY ZEKA ASİSTANI: Merhaba, {hospital} Hasta Deneyimi Merkezi'nden arıyorum. Son geri bildiriminiz hakkında birim yöneticimizin detaylı inceleme yapabilmesi adına eksik kalan birkaç operasyonel bilgiyi teyit etmek için aradım. Çok kısa vaktiniz var mı?",
+        "HASTA: Evet, dinliyorum, buyrun.",
     ]
 
     for field_key, answer_val in patient_responses.items():
         q_text = get_question_for_field(field_key)
-        transcript_lines.append(f"AI AGENT: {q_text}")
-        transcript_lines.append(f"PATIENT: It was {answer_val}.")
+        transcript_lines.append(f"YAPAY ZEKA ASİSTANI: {q_text}")
+        transcript_lines.append(f"HASTA: {answer_val} idi.")
 
     transcript_lines.append(
-        "AI AGENT: Thank you very much for clarifying that. Our clinic manager will review the queue records and we appreciate your time. Have a wonderful day!"
+        "YAPAY ZEKA ASİSTANI: Çok teşekkür ederiz, gerekli bilgileri sisteme kaydettim. İlgili birim yöneticimiz incelemeyi ivedilikle başlatacaktır. Sağlıklı ve iyi günler dileriz!"
     )
     transcript_text = "\n".join(transcript_lines)
 
-    # Re-evaluate with confirmed responses
-    original_text = case.get("original_feedback", "")
-    re_extracted, is_live, err = extract_feedback_info(original_text)
+    # Re-evaluate with confirmed responses (reuse extracted_json if available)
+    extracted_json = case.get("extracted_json")
+    if extracted_json:
+        try:
+            from feedbackiq.models.schemas import ExtractedFeedbackData
+            re_extracted = ExtractedFeedbackData.model_validate_json(extracted_json)
+        except Exception:
+            re_extracted, is_live, err = extract_feedback_info(case.get("original_feedback", ""))
+    else:
+        original_text = case.get("original_feedback", "")
+        re_extracted, is_live, err = extract_feedback_info(original_text)
 
-    # Evaluate completeness
+    # Evaluate completeness with overrides
     result = evaluate_completeness(re_extracted, confirmed_overrides=patient_responses)
 
-    # Persist follow-up entry
+    # Persist follow-up entry in Turkish
     collected_summary = ", ".join([f"{get_field_display_name(k)}: {v}" for k, v in patient_responses.items()])
     add_follow_up_entry(
         case_id=case_id,
         contact_status=ContactStatus.AI_CALL_COMPLETED.value,
-        additional_information=f"AI Voice Call Completed. Captured: {collected_summary}",
-        notes=f"Automated call duration: 1m 14s. Transcript logged."
+        additional_information=f"Yapay Zeka Sesli Arama Tamamlandı. Alınan Bilgiler: {collected_summary}",
+        notes="Otonom sesli arama süresi: 1 dk 14 sn. Konuşma dökümü kaydedildi."
     )
 
     # Update case with new data and transcript

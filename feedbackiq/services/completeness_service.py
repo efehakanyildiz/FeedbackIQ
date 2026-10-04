@@ -144,18 +144,20 @@ def evaluate_completeness(
         )
 
     # 3-Tier Triage Classification Logic
+    is_hospital_missing = "hospital" in sorted_missing
+
     if missing_count == 0 or (critical_count == 0 and normalized_score >= 95):
-        # Tier 1: Sufficient Data -> Approved
+        # Kademe 1: Yeterli Veri -> Onaylandı / Doğrudan İş Akışına Sevk
         triage_tier = TriageTier.TIER_1_APPROVED
         status = CompletenessStatus.APPROVED
         is_complete = True
         requires_ai_call = False
         requires_csr_escalation = False
-        triage_reason = "Sufficient operational data present. Approved for direct workflow routing."
+        triage_reason = "Yeterli operasyonel veri mevcut. Doğrudan ilgili birim iş akışına onaylandı."
         follow_up_priority = FollowUpPriority.LOW
 
-    elif normalized_score >= 50 and missing_count <= 2 and critical_count <= 1:
-        # Tier 2: Minor Missing Data -> AI Voice Bot Follow-up Call
+    elif not is_hospital_missing and normalized_score >= 50 and missing_count <= 2 and critical_count <= 1:
+        # Kademe 2: Küçük Eksiklik (Hastane biliniyor, 1-2 küçük detay eksik) -> AI Sesli Arama Botu
         triage_tier = TriageTier.TIER_2_AI_CALL
         status = CompletenessStatus.AI_CALL_SCHEDULED
         is_complete = False
@@ -163,13 +165,13 @@ def evaluate_completeness(
         requires_csr_escalation = False
         missing_names = [get_field_display_name(f) for f in sorted_missing]
         triage_reason = (
-            f"Minor operational gap ({', '.join(missing_names)}). "
-            "Assigned to automated AI Voice Agent for targeted telephone verification."
+            f"Küçük operasyonel eksiklik ({', '.join(missing_names)}). "
+            "Hedefli telefon teyidi için otonom Yapay Zeka Sesli Arama Botuna yönlendirildi."
         )
         follow_up_priority = FollowUpPriority.MEDIUM
 
     else:
-        # Tier 3: Major Missing Data -> Human Customer Service Escalation
+        # Kademe 3: Kritik Eksik Veri (Hastane belirsiz veya birden çok eksik) -> Müşteri Hizmetleri İncelemesi
         triage_tier = TriageTier.TIER_3_CSR_ESCALATION
         status = CompletenessStatus.CSR_ESCALATION
         is_complete = False
@@ -177,18 +179,18 @@ def evaluate_completeness(
         requires_csr_escalation = True
         missing_names = [get_field_display_name(f) for f in sorted_missing]
         triage_reason = (
-            f"Multiple critical gaps ({', '.join(missing_names) if missing_names else 'insufficient context'}). "
-            "Escalated to human Customer Service Representative for manual investigation."
+            f"Kritik bilgi eksikliği ({', '.join(missing_names) if missing_names else 'yetersiz operasyonel veri'}). "
+            "Temsilci incelemesi için Müşteri Hizmetleri Masasına sevk edildi."
         )
         follow_up_priority = FollowUpPriority.HIGH
 
-    # Build why_needed explanation
-    base_desc = rule_config.get("explanation", "Operational details are required for institutional investigation.")
+    # Build why_needed explanation in Turkish
+    base_desc = rule_config.get("explanation", "Kurumsal inceleme için operasyonel ayrıntılar gereklidir.")
     if is_complete:
-        why_explanation = "The feedback record contains all operational details required to investigate and resolve the case immediately."
+        why_explanation = "Geri bildirim kaydı, ilgili poliklinik veya birimin derhal inceleme başlatması için gereken tüm operasyonel ayrıntıları eksiksiz içermektedir."
     else:
         missing_names = [get_field_display_name(f) for f in sorted_missing]
-        why_explanation = f"{base_desc} Missing variables: {', '.join(missing_names)}. {triage_reason}"
+        why_explanation = f"{base_desc} Şu an eksik olan parametreler: {', '.join(missing_names)}. {triage_reason}"
 
     return CompletenessResult(
         completeness_score=normalized_score,

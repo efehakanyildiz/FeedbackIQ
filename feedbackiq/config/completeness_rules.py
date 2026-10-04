@@ -1,22 +1,17 @@
 """
-Configurable completeness rules and scoring weights per Issue Type.
-Deterministic business logic independent of Gemini API.
+Kategori bazlı deterministik tamamlanma kuralları ve puanlama ağırlıkları.
+Tüm açıklamalar ve iş kuralları Türkçe olarak yapılandırılmıştır.
 """
 
 from typing import Dict, Any, List
 
-# Completeness threshold definitions
-THRESHOLD_COMPLETE = 85
-THRESHOLD_NEEDS_REVIEW = 60
+# Tamamlanma eşik değerleri
+THRESHOLD_COMPLETE = 80
+THRESHOLD_NEEDS_REVIEW = 50
 
-# Scoring configurations per Issue Type
-# Each rule config defines:
-# - weights: numeric weights for each detected field (must total 100)
-# - critical_fields: fields that MUST be present for workflow readiness
-# - or_groups: list of tuples where at least one field must be populated
-# - why_needed_template: explanation template for CSR
+# Şikayet/Bildirim Türüne Göre Ağırlık ve Kritik Alan Konfigürasyonu
 ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
-    "Waiting Time": {
+    "Bekleme Süresi": {
         "weights": {
             "hospital": 25,
             "department": 20,
@@ -29,10 +24,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "or_groups": [
             ("department", "service_type"),
         ],
-        "time_sensitive": True,
-        "explanation": "Waiting-time complaints require the hospital, clinic/department, date, and approximate time to cross-reference with queue logs."
+        "explanation": "Bekleme süresi şikayetlerinde kuyruk ve randevu loglarını denetlemek için hastane şubesi, poliklinik, tarih ve yaklaşık saat bilgisi gereklidir."
     },
-    "Staff Behavior": {
+    "Personel Davranışı": {
         "weights": {
             "hospital": 25,
             "department": 15,
@@ -47,10 +41,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
             ("department", "service_type"),
             ("staff_role", "staff_name"),
         ],
-        "time_sensitive": False,
-        "explanation": "Staff conduct complaints require the hospital branch, department, and staff role/identity so unit managers can conduct a targeted inquiry."
+        "explanation": "Personel tutumu bildirimlerinde birim yöneticisinin hedefe yönelik inceleme yapabilmesi için hastane, ilgili poliklinik ve personelin unvanı/adı gereklidir."
     },
-    "Billing / Payment": {
+    "Fatura & Ödeme": {
         "weights": {
             "hospital": 25,
             "incident_date": 15,
@@ -60,10 +53,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         },
         "critical_fields": ["hospital", "billing_context", "description_of_event"],
         "or_groups": [],
-        "time_sensitive": False,
-        "explanation": "Billing issues require the specific hospital, transaction context (e.g., invoice, receipt, POS terminal), and incident date for financial reconciliation."
+        "explanation": "Ödeme ve fatura incelemelerinde muhasebe mutabakatı için ilgili hastane, işlem tarihi ve ödeme tutarsızlığı detayları zorunludur."
     },
-    "Appointment": {
+    "Randevu Süreci": {
         "weights": {
             "hospital": 25,
             "department": 20,
@@ -75,10 +67,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "or_groups": [
             ("department", "service_type"),
         ],
-        "time_sensitive": False,
-        "explanation": "Appointment discrepancies require the hospital, relevant specialty/doctor, and scheduled date to audit HIS booking logs."
+        "explanation": "Randevu aksaklıklarında HBYS kayıtlarını denetlemek için hastane, uzmanlık alanı ve randevu tarihi gereklidir."
     },
-    "Registration": {
+    "Danışma / Kayıt": {
         "weights": {
             "hospital": 25,
             "incident_date": 20,
@@ -90,10 +81,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "or_groups": [
             ("department", "service_type"),
         ],
-        "time_sensitive": False,
-        "explanation": "Registration issues require the hospital location and date to review counter desk operations and intake logs."
+        "explanation": "Hasta kabul ve kayıt aksaklıklarında desk işlemlerini incelemek için hastane lokasyonu ve tarih bilgisi gereklidir."
     },
-    "Facility / Cleanliness": {
+    "Temizlik & Tesis": {
         "weights": {
             "hospital": 30,
             "department": 20,
@@ -105,10 +95,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "or_groups": [
             ("department", "service_type"),
         ],
-        "time_sensitive": False,
-        "explanation": "Facility and hygiene reports need the exact hospital and specific location/floor/unit for housekeeping dispatch."
+        "explanation": "Hijyen ve teknik altyapı bildirimlerinde temizlik veya teknik ekipleri yönlendirmek için tam hastane ve birim/kat lokasyonu gereklidir."
     },
-    "Medical Service Process": {
+    "Tıbbi Hizmet Süreci": {
         "weights": {
             "hospital": 25,
             "department": 20,
@@ -121,10 +110,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "or_groups": [
             ("department", "service_type"),
         ],
-        "time_sensitive": False,
-        "explanation": "Clinical process feedback requires hospital, department, and procedure details for quality review."
+        "explanation": "Klinik süreç geri bildirimlerinde kalite direktörlüğü incelemesi için hastane, poliklinik ve tetkik bilgisi gereklidir."
     },
-    "Communication": {
+    "İletişim & Bilgilendirme": {
         "weights": {
             "hospital": 25,
             "department": 20,
@@ -136,10 +124,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "or_groups": [
             ("department", "service_type"),
         ],
-        "time_sensitive": False,
-        "explanation": "Communication gaps require hospital and clinic context to clarify patient instructions and follow-up messaging."
+        "explanation": "İletişim eksikliklerinde hasta bilgilendirme süreçlerini netleştirmek için hastane ve birim bağlamı gereklidir."
     },
-    "Technical Issue": {
+    "Teknik Aksaklık": {
         "weights": {
             "hospital": 20,
             "department": 15,
@@ -149,10 +136,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         },
         "critical_fields": ["description_of_event"],
         "or_groups": [],
-        "time_sensitive": False,
-        "explanation": "Technical defects require a clear description of the failing system (portal, kiosk, payment terminal) and approximate date."
+        "explanation": "Sistem arızalarında arızalanan cihaz veya yazılımın (portal, vezne POS, sıramatik) açıkça tanımlanması gereklidir."
     },
-    "Food / Catering": {
+    "Yemek & İkram": {
         "weights": {
             "hospital": 30,
             "department": 20,
@@ -161,10 +147,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         },
         "critical_fields": ["hospital", "description_of_event"],
         "or_groups": [],
-        "time_sensitive": False,
-        "explanation": "Catering feedback requires hospital and department/ward location to audit meal distribution."
+        "explanation": "Yemek ve ikram bildirimlerinde dağıtım servisini denetlemek için hastane ve servis katı bilgisi gereklidir."
     },
-    "Parking / Transportation": {
+    "Otopark & Ulaşım": {
         "weights": {
             "hospital": 40,
             "incident_date": 20,
@@ -172,10 +157,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         },
         "critical_fields": ["hospital", "description_of_event"],
         "or_groups": [],
-        "time_sensitive": False,
-        "explanation": "Parking feedback requires the specific hospital campus and description of the parking area."
+        "explanation": "Otopark bildirimlerinde yerleşke ve otopark alanı tanımı gereklidir."
     },
-    "Appreciation": {
+    "Teşekkür & Memnuniyet": {
         "weights": {
             "hospital": 25,
             "department": 25,
@@ -187,10 +171,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "or_groups": [
             ("hospital", "department"),
         ],
-        "time_sensitive": False,
-        "explanation": "Appreciation records have lighter requirements; knowing either the hospital or department is sufficient to route commendations."
+        "explanation": "Memnuniyet bildirimlerinde hastane veya birim bilgisinin bulunması tebrik iletimi için yeterlidir."
     },
-    "General Suggestion": {
+    "Genel Öneri": {
         "weights": {
             "hospital": 20,
             "department": 20,
@@ -199,10 +182,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         },
         "critical_fields": ["description_of_event"],
         "or_groups": [],
-        "time_sensitive": False,
-        "explanation": "General suggestions require actionable operational descriptions to assess institutional feasibility."
+        "explanation": "Öneri kayıtlarında uygulanabilir operasyonel fikir ve bağlamın açıklanması gereklidir."
     },
-    "Other": {
+    "Diğer": {
         "weights": {
             "hospital": 25,
             "department": 20,
@@ -211,7 +193,22 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         },
         "critical_fields": ["description_of_event"],
         "or_groups": [],
-        "time_sensitive": False,
-        "explanation": "Uncategorized feedback requires sufficient descriptive detail and context for preliminary administrative review."
+        "explanation": "Kategorize edilmemiş geri bildirimlerde ön inceleme için yeterli açıklama ve bağlam gereklidir."
     }
 }
+
+# English key alias fallback so tests and legacy schemas remain compatible
+ISSUE_RULES_CONFIG["Waiting Time"] = ISSUE_RULES_CONFIG["Bekleme Süresi"]
+ISSUE_RULES_CONFIG["Staff Behavior"] = ISSUE_RULES_CONFIG["Personel Davranışı"]
+ISSUE_RULES_CONFIG["Billing / Payment"] = ISSUE_RULES_CONFIG["Fatura & Ödeme"]
+ISSUE_RULES_CONFIG["Appointment"] = ISSUE_RULES_CONFIG["Randevu Süreci"]
+ISSUE_RULES_CONFIG["Registration"] = ISSUE_RULES_CONFIG["Danışma / Kayıt"]
+ISSUE_RULES_CONFIG["Facility / Cleanliness"] = ISSUE_RULES_CONFIG["Temizlik & Tesis"]
+ISSUE_RULES_CONFIG["Medical Service Process"] = ISSUE_RULES_CONFIG["Tıbbi Hizmet Süreci"]
+ISSUE_RULES_CONFIG["Communication"] = ISSUE_RULES_CONFIG["İletişim & Bilgilendirme"]
+ISSUE_RULES_CONFIG["Technical Issue"] = ISSUE_RULES_CONFIG["Teknik Aksaklık"]
+ISSUE_RULES_CONFIG["Food / Catering"] = ISSUE_RULES_CONFIG["Yemek & İkram"]
+ISSUE_RULES_CONFIG["Parking / Transportation"] = ISSUE_RULES_CONFIG["Otopark & Ulaşım"]
+ISSUE_RULES_CONFIG["Appreciation"] = ISSUE_RULES_CONFIG["Teşekkür & Memnuniyet"]
+ISSUE_RULES_CONFIG["General Suggestion"] = ISSUE_RULES_CONFIG["Genel Öneri"]
+ISSUE_RULES_CONFIG["Other"] = ISSUE_RULES_CONFIG["Diğer"]

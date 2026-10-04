@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FeedbackIQ — Hasta Deneyimi Kalite & Triage Güvenlik Katmanı</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Header & Navigation Bar -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">FeedbackIQ</span>
+          <span class="brand-tag">Triage & Kalite Güvenlik Katmanı</span>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" id="navTabs">
+        <button class="nav-tab active" data-tab="dashboard">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Genel Bakış
+        </button>
+        <button class="nav-tab" data-tab="intake">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Geri Bildirim Analizi
+        </button>
+        <button class="nav-tab" data-tab="ai-queue">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          AI Sesli Arama Kuyruğu
+          <span class="badge-pill count-pill" id="aiQueueCount">0</span>
+        </button>
+        <button class="nav-tab" data-tab="csr-queue">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Müşteri Hizmetleri
+          <span class="badge-pill count-pill alert-pill" id="csrQueueCount">0</span>
+        </button>
+        <button class="nav-tab" data-tab="case-detail">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          Vaka Masası
+        </button>
+        <button class="nav-tab" data-tab="analytics">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          Analitik
+        </button>
+        <button class="nav-tab" data-tab="architecture">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          Mimari
+        </button>
+      </nav>
+
+      <div class="header-status">
+        <span class="status-indicator-dot"></span>
+        <span class="status-text">Gemini Canlı Aktif (Ücretsiz Katman)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace Container -->
+  <main class="app-main">
+    
+    <!-- 1. DASHBOARD VIEW -->
+    <section class="tab-view active" id="view-dashboard">
+      <div class="view-header">
+        <div>
+          <h1 class="view-title">Hasta Deneyimi Kalite Özeti</h1>
+          <p class="view-desc">Gelen geri bildirimlerin operasyonel tamlık durumu ve 3 kademeli yönlendirme tablosu.</p>
+        </div>
+        <button class="btn btn-secondary" id="btnRefreshData">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+          Verileri Yenile
+        </button>
+      </div>
+
+      <!-- KPI Grid -->
+      <div class="kpi-grid">
+        <div class="kpi-box">
+          <span class="kpi-title">Toplam Kayıt</span>
+          <span class="kpi-number" id="kpiTotal">-</span>
+          <span class="kpi-foot">Tüm kanallardan gelen</span>
+        </div>
+        <div class="kpi-box kpi-highlight-success">
+          <span class="kpi-title">Kademe 1: Onaylandı</span>
+          <span class="kpi-number text-success" id="kpiApproved">-</span>
+          <span class="kpi-foot">Yeterli veri, doğrudan sevk</span>
+        </div>
+        <div class="kpi-box kpi-highlight-indigo">
+          <span class="kpi-title">Kademe 2: AI Sesli Arama</span>
+          <span class="kpi-number text-indigo" id="kpiAiCall">-</span>
+          <span class="kpi-foot">Küçük eksiklikler, otonom bot</span>
+        </div>
+        <div class="kpi-box kpi-highlight-danger">
+          <span class="kpi-title">Kademe 3: Müşteri Hizmetleri</span>
+          <span class="kpi-number text-danger" id="kpiCsr">-</span>
+          <span class="kpi-foot">Kritik eksiklikler, insan temsilci</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-title">Ortalama Kalite Puanı</span>
+          <span class="kpi-number" id="kpiAvgScore">-</span>
+          <span class="kpi-foot">Deterministik 0-100 ölçeği</span>
+        </div>
+      </div>
+
+      <!-- Two Column Overview -->
+      <div class="grid-2col">
+        <div class="glass-card">
+          <div class="card-header">
+            <span class="card-title">3 Kademeli Triage Dağılımı</span>
+          </div>
+          <div class="triage-distribution-bars" id="triageDistContainer">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-header">
+            <span class="card-title">En Çok Eksik Kalan Parametreler</span>
+          </div>
+          <div class="missing-items-list" id="topMissingContainer">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Cases Table -->
+      <div class="glass-card">
+        <div class="card-header">
+          <span class="card-title">Son Gelen Geri Bildirim Kayıtları</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Vaka No</th>
+                <th>Tarih</th>
+                <th>Kanal</th>
+                <th>Kategori</th>
+                <th>Kalite Skoru</th>
+                <th>Triage Kademesi</th>
+                <th>Durum</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="recentCasesTableBody">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. INTAKE & ANALYSIS VIEW -->
+    <section class="tab-view" id="view-intake">
+      <div class="view-header">
+        <div>
+          <h1 class="view-title">Yeni Geri Bildirim Girişi & Analiz</h1>
+          <p class="view-desc">Ham hasta geri bildirim metnini girin; sistem Gemini ile operasyonel değişkenleri çıkarsın ve kademesini belirlesin.</p>
+        </div>
+      </div>
+
+      <!-- Predefined Scenario Pills -->
+      <div class="scenarios-bar">
+        <span class="scenarios-label">Hazır Test Senaryoları:</span>
+        <button class="scenario-chip" id="btnScen1">
+          <strong>Senaryo 1:</strong> Yeterli Veri (Kademe 1: Onaylandı)
+        </button>
+        <button class="scenario-chip" id="btnScen2">
+          <strong>Senaryo 2:</strong> Küçük Eksiklik (Kademe 2: AI Sesli Arama)
+        </button>
+        <button class="scenario-chip" id="btnScen3">
+          <strong>Senaryo 3:</strong> Kritik Eksiklik (Kademe 3: Müşteri Hizmetleri)
+        </button>
+      </div>
+
+      <!-- Intake Form Card -->
+      <div class="glass-card">
+        <div class="form-group">
+          <label class="form-label">Hasta Geri Bildirim Metni</label>
+          <textarea class="form-textarea" id="inputFeedbackText" rows="4" placeholder="Örn: Dün kardiyoloji polikliniğinde randevuma rağmen 45 dakika bekletildim ve kimse açıklama yapmadı..."></textarea>
+        </div>
+
+        <div class="grid-3col form-row">
+          <div class="form-group">
+            <label class="form-label">Geri Bildirim Kanalı</label>
+            <select class="form-select" id="selectChannel">
+              <option value="Web Sitesi">Web Sitesi</option>
+              <option value="Çağrı Merkezi">Çağrı Merkezi</option>
+              <option value="QR Kod">QR Kod</option>
+              <option value="E-posta">E-posta</option>
+              <option value="Sosyal Medya">Sosyal Medya</option>
+              <option value="Diğer">Diğer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bilinen Hastane / Şube (Varsa)</label>
+            <input type="text" class="form-input" id="inputHospitalHint" placeholder="Örn: Merkez Şehir Hastanesi" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bilinen Tarih (Varsa)</label>
+            <input type="text" class="form-input" id="inputDateHint" placeholder="Örn: 2026-10-03 veya dün" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary btn-large" id="btnRunAnalysis">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Operasyonel Analizi Çalıştır
+          </button>
+        </div>
+      </div>
+
+      <!-- Analysis Results Container -->
+      <div id="analysisResultContainer" style="display: none; margin-top: 1.5rem;">
+        <!-- Populated via JS -->
+      </div>
+    </section>
+
+    <!-- 3. AI VOICE QUEUE VIEW (TIER 2) -->
+    <section class="tab-view" id="view-ai-queue">
+      <div class="view-header">
+        <div>
+          <div class="badge-pill tier-pill-ai">Kademe 2 Çözümleme Hattı</div>
+          <h1 class="view-title">Yapay Zeka Sesli Arama Kuyruğu</h1>
+          <p class="view-desc">Küçük bilgi eksiklikleri (yaklaşık saat, poliklinik teyidi vb.) bulunan hastaları otonom arayarak personelin vaktini koruyan sesli bot kuyruğu.</p>
+        </div>
+      </div>
+
+      <div class="cases-queue-container" id="aiQueueCardsContainer">
+        <!-- Populated via JS -->
+      </div>
+    </section>
+
+    <!-- 4. CUSTOMER SERVICE QUEUE VIEW (TIER 3) -->
+    <section class="tab-view" id="view-csr-queue">
+      <div class="view-header">
+        <div>
+          <div class="badge-pill tier-pill-csr">Kademe 3 İnsan Masası</div>
+          <h1 class="view-title">Müşteri Hizmetleri İnceleme Kuyruğu</h1>
+          <p class="view-desc">Hastane adı bulunmayan, fatura tutarsızlığı içeren veya çok sayıda kritik bilgisi eksik olan karmaşık vakaların temsilci inceleme kuyruğu.</p>
+        </div>
+      </div>
+
+      <div class="cases-queue-container" id="csrQueueCardsContainer">
+        <!-- Populated via JS -->
+      </div>
+    </section>
+
+    <!-- 5. CASE DETAIL WORKSPACE VIEW -->
+    <section class="tab-view" id="view-case-detail">
+      <div class="view-header">
+        <div>
+          <h1 class="view-title">Vaka İnceleme & Çözümleme Masası</h1>
+          <p class="view-desc">Temsilci incelemesi, teyitli verilerin sisteme girilmesi ve vakanın yeniden değerlendirilmesi.</p>
+        </div>
+        <div class="case-select-wrapper">
+          <label class="form-label" style="margin-bottom:0;">İncelenen Vaka:</label>
+          <select class="form-select" id="selectCaseDropdown" style="min-width:280px;"></select>
+        </div>
+      </div>
+
+      <div id="caseDetailContent">
+        <!-- Populated via JS -->
+      </div>
+    </section>
+
+    <!-- 6. ANALYTICS VIEW -->
+    <section class="tab-view" id="view-analytics">
+      <div class="view-header">
+        <div>
+          <h1 class="view-title">Operasyonel Kalite Analitiği</h1>
+          <p class="view-desc">Geri bildirim kanallarının veri kalitesi kıyaslaması ve kademe dönüşüm oranları.</p>
+        </div>
+      </div>
+
+      <div class="insight-banner">
+        <div class="insight-title">Stratejik Kanal Verimliliği Analizi:</div>
+        <div class="insight-body">
+          <strong>QR Kod</strong> ile gönderilen geri bildirimler ortalama <strong>61/100</strong> puan alırken, <strong>Çağrı Merkezi</strong> kayıtları <strong>89/100</strong> puana ulaşmaktadır. 
+          FeedbackIQ, eksik gelen QR kod kayıtlarını doğrudan <strong>Kademe 2 (AI Sesli Bot)</strong> ile otomatik arayarak insan personelin %70 oranında gereksiz iş yükü altına girmesini engeller.
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="glass-card">
+          <div class="card-header">
+            <span class="card-title">Kanal Kalite Kıyaslaması (0-100 Puan)</span>
+          </div>
+          <div id="analyticsChannelChart" class="chart-bars-list">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-header">
+            <span class="card-title">Kademelere Göre Dağılım</span>
+          </div>
+          <div id="analyticsTierChart" class="chart-bars-list">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. ARCHITECTURE VIEW -->
+    <section class="tab-view" id="view-architecture">
+      <div class="view-header">
+        <div>
+          <h1 class="view-title">Sistem Mimarisi & Yönetişim</h1>
+          <p class="view-desc">Sessiz arka plan yapay zekası, deterministik Python karar motoru ve 3 kademeli triage akışı.</p>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="glass-card">
+          <div class="card-header">
+            <span class="card-title">Neden Chatbot Değil?</span>
+          </div>
+          <p class="arch-p">
+            Çoğu yapay zeka projesi, mağdur veya sinirli bir hastanın karşısına interaktif bir sohbet botu koyarak hastanın tepkisini çeker.
+            <strong>FeedbackIQ ise hastane operasyonunun arkasında sessiz bir kalite güvenlik duvarı olarak çalışır:</strong>
+          </p>
+          <ul class="arch-ul">
+            <li><strong>Sıfır Sürtünme:</strong> Hasta istediği kanaldan (Web, QR, SMS) normal mesajını yazar.</li>
+            <li><strong>Sessiz Bilgi Çıkarımı:</strong> Google Gemini sadece operasyonel parametreleri (Hastane, Bölüm, Saat, Olay) yapılandırılmış JSON olarak çıkarır.</li>
+            <li><strong>Deterministik Karar:</strong> Vakanın tamamlanma puanını ve yönlendirmesini LLM değil, Python iş kuralları motoru hesaplar.</li>
+            <li><strong>%100 Ücretsiz:</strong> Google AI Studio Free Tier + yerel SQLite + FastAPI altyapısıyla sıfır maliyetle çalışır.</li>
+          </ul>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-header">
+            <span class="card-title">3 Kademeli Triage Kuralı</span>
+          </div>
+          <div class="arch-tier-box tier-box-1">
+            <div class="arch-tier-title">Kademe 1: Onaylandı (Yeterli Veri)</div>
+            <div class="arch-tier-desc">Skor &ge; 80 ve kritik alan eksiği yok. Vaka doğrudan ilgili poliklinik veya departman yöneticisinin kuyruğuna aktarılır.</div>
+          </div>
+          <div class="arch-tier-box tier-box-2">
+            <div class="arch-tier-title">Kademe 2: AI Sesli Arama (Biraz Eksik Veri)</div>
+            <div class="arch-tier-desc">Sadece 1-2 operasyonel detay (saat, poliklinik vb.) eksikse otonom yapay zeka sesli botu hastayı arar, eksiği alır ve onaylar.</div>
+          </div>
+          <div class="arch-tier-box tier-box-3">
+            <div class="arch-tier-title">Kademe 3: Müşteri Hizmetleri (Çok Eksik Veri)</div>
+            <div class="arch-tier-desc">Hastane adı belirsiz veya birden fazla kritik bilgi eksikse insan temsilciye eskalasyon yapılır.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Interactive AI Voice Call Simulator Modal -->
+  <div class="modal-backdrop" id="aiCallModal">
+    <div class="call-modal-box">
+      <div class="modal-top">
+        <span class="call-badge">Otonom Telefon Görüşmesi Simülasyonu</span>
+        <button class="modal-close" id="btnCloseCallModal">&times;</button>
+      </div>
+
+      <div class="call-visual-container">
+        <div class="call-avatar-pulse">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </div>
+        <div class="call-patient-title" id="callPatientTitle">Hasta Telefon Hattı Aranıyor...</div>
+        <div class="call-waveform">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="call-transcript-panel" id="callTranscriptBox">
+        <div class="transcript-placeholder">Görüşme başlatılıyor, konuşma dökümü aktarılıyor...</div>
+      </div>
+
+      <div class="call-modal-footer" id="callModalFooter">
+        <button class="btn btn-primary" id="btnFinishCall" style="display:none;">
+          Görüşmeyi Tamamla ve Vakayı Onayla
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

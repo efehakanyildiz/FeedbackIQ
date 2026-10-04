@@ -24,7 +24,7 @@ def test_sufficient_data_reaches_tier_1_approved():
         feedback_type=FeedbackType.COMPLAINT,
         issue_type=IssueType.WAITING_TIME,
         sentiment=SentimentType.NEGATIVE,
-        hospital="Medicana Atakoy Hospital",
+        hospital="Merkez Sehir Hastanesi",
         department="Cardiology",
         incident_date="2026-10-03",
         approximate_time="14:00",
@@ -47,7 +47,7 @@ def test_minor_gap_reaches_tier_2_ai_call():
         feedback_type=FeedbackType.COMPLAINT,
         issue_type=IssueType.WAITING_TIME,
         sentiment=SentimentType.NEGATIVE,
-        hospital="Medicana Atakoy Hospital",
+        hospital="Merkez Sehir Hastanesi",
         department="Cardiology",
         incident_date="yesterday",
         approximate_time=None,  # Only time is missing (minor gap)
@@ -91,7 +91,7 @@ def test_appreciation_has_lighter_requirements():
         feedback_type=FeedbackType.APPRECIATION,
         issue_type=IssueType.APPRECIATION,
         sentiment=SentimentType.POSITIVE,
-        hospital="Medicana Kadikoy",
+        hospital="Kadikoy Saglik Merkezi",
         department=None,
         description_of_event="The oncology nursing staff was wonderfully supportive throughout my mother's infusion.",
         extraction_confidence=0.9
@@ -120,7 +120,7 @@ def test_adding_followup_information_increases_score_and_resolves():
 
     # Collected details
     collected = {
-        "hospital": "Medicana Camlica Hospital",
+        "hospital": "Camlica Saglik Merkezi",
         "department": "Cardiology",
         "approximate_time": "14:30",
         "service_type": "Echo Doppler"
@@ -159,7 +159,7 @@ def test_question_generator_asks_only_about_missing_fields():
         feedback_type=FeedbackType.COMPLAINT,
         issue_type=IssueType.BILLING_PAYMENT,
         sentiment=SentimentType.NEGATIVE,
-        hospital="Medicana Bahcelievler",
+        hospital="Bahcelievler Tip Merkezi",
         incident_date="2026-10-01",
         billing_context=None,
         description_of_event="Charged twice for lab test.",

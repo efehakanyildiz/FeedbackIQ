@@ -1,43 +1,43 @@
 """
-Deterministic follow-up question templates and field display mappings.
-Only missing fields trigger follow-up questions.
+Deterministik takip sorusu şablonları ve alan görüntüleme eşleştirmeleri.
+Yalnızca eksik olan alanlar için hedefe yönelik Türkçe sorular üretilir.
 """
 
 FIELD_DISPLAY_NAMES = {
-    "hospital": "Hospital / Facility Name",
-    "department": "Department / Clinic",
-    "incident_date": "Incident Date",
-    "approximate_time": "Approximate Time",
-    "service_type": "Service or Procedure Type",
-    "staff_role": "Staff Role / Title",
-    "staff_name": "Staff Name",
-    "billing_context": "Billing / Payment Context",
-    "description_of_event": "Detailed Incident Description",
-    "impact": "Operational Impact",
+    "hospital": "Hastane / Şube Adı",
+    "department": "Poliklinik / Birim",
+    "incident_date": "Olay Tarihi",
+    "approximate_time": "Yaklaşık Saat",
+    "service_type": "Hizmet / Tetkik Türü",
+    "staff_role": "Personel Görevi / Unvanı",
+    "staff_name": "Personel Adı",
+    "billing_context": "Fatura / Ödeme Detayı",
+    "description_of_event": "Olay Açıklaması",
+    "impact": "Operasyonel Etki / Mağduriyet",
 }
 
 QUESTION_TEMPLATES = {
-    "hospital": "Which hospital or facility did you visit?",
-    "department": "Which department or unit did you receive service from?",
-    "incident_date": "On which date did the incident occur?",
-    "approximate_time": "Approximately what time did the incident occur?",
-    "service_type": "Which service or examination were you receiving when this occurred?",
-    "staff_role": "Do you remember the role of the staff member involved, such as doctor, nurse, or registration clerk?",
-    "staff_name": "Do you happen to remember the name of the staff member involved?",
-    "billing_context": "Could you provide more specific information regarding the billing or payment discrepancy?",
-    "description_of_event": "Could you briefly describe exactly what happened in more detail?",
-    "impact": "Could you describe how this incident impacted your care or schedule?",
+    "hospital": "Ziyaret ettiğiniz hastane veya şubeyi öğrenebilir miyiz?",
+    "department": "Hangi poliklinik veya tıbbi birimden hizmet aldınız?",
+    "incident_date": "Yaşanan durum hangi tarihte gerçekleşti?",
+    "approximate_time": "Durum yaklaşık olarak günün hangi saatinde meydana geldi?",
+    "service_type": "Hangi muayene veya tetkik işlemi sırasında bu durum yaşandı?",
+    "staff_role": "Görüştüğünüz personelin unvanını hatırlıyor musunuz (doktor, hemşire, vezne görevlisi vb.)?",
+    "staff_name": "İlgili personelin ismini hatırlıyor musunuz?",
+    "billing_context": "Ödeme veya fatura tutarsızlığı hakkında biraz daha ayrıntı verebilir misiniz?",
+    "description_of_event": "Yaşanan durumu kısaca biraz daha detaylandırabilir misiniz?",
+    "impact": "Bu durum tedavi sürecinizi veya günlük planınızı nasıl etkiledi?",
 }
 
 
 def get_question_for_field(field_name: str) -> str:
-    """Return standard deterministic question for missing field."""
+    """Eksik alan için hedefe yönelik standart Türkçe soruyu döndürür."""
     return QUESTION_TEMPLATES.get(
         field_name,
-        f"Could you please provide more details regarding {FIELD_DISPLAY_NAMES.get(field_name, field_name)}?"
+        f"{FIELD_DISPLAY_NAMES.get(field_name, field_name)} hakkında bilgi verebilir misiniz?"
     )
 
 
 def get_field_display_name(field_name: str) -> str:
-    """Return clean human-readable name for a field."""
+    """Alan anahtarı için temiz, profesyonel Türkçe başlık döndürür."""
     return FIELD_DISPLAY_NAMES.get(field_name, field_name.replace("_", " ").title())

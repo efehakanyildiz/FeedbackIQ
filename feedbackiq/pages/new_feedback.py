@@ -13,9 +13,9 @@ from feedbackiq.utils.helpers import render_tier_badge, render_score_badge, rend
 
 SAMPLE_SCENARIOS = {
     "Scenario A: Sufficient Data (Tier 1 Approved)": {
-        "text": "I visited Medicana Example Hospital cardiology department on October 3 around 14:00. Registration took almost 45 minutes even though I had an appointment.",
+        "text": "I visited Merkez Sağlık Hastanesi cardiology department on October 3 around 14:00. Registration took almost 45 minutes even though I had an appointment.",
         "channel": SourceChannel.WEBSITE.value,
-        "hospital": "Medicana Example Hospital",
+        "hospital": "Merkez Sağlık Hastanesi",
         "date": "October 3"
     },
     "Scenario B: Minor Gap (Tier 2 AI Voice Call)": {

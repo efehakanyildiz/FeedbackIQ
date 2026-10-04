@@ -26,112 +26,112 @@ from feedbackiq.services.completeness_service import evaluate_completeness
 
 SEED_CASES = [
     {
-        # Tier 2: Minor missing data (Only time and unit missing, hospital is known)
+        # Kademe 2: Küçük eksiklik (Saat ve bölüm eksik, hastane biliniyor)
         "case_id": "FB-2026-1001",
         "created_at": "2026-10-01 09:15:00",
         "source_channel": SourceChannel.QR_CODE.value,
-        "original_feedback": "I visited Example Hospital yesterday and waited almost an hour. Nobody told me why.",
+        "original_feedback": "Dün Merkez Şehir Hastanesi'ne geldim ve bekleme salonunda neredeyse bir saat bekletildim. Kimse bana gecikmenin nedenini açıklamadı.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.WAITING_TIME,
             sentiment=SentimentType.NEGATIVE,
-            hospital="Example Hospital",
+            hospital="Merkez Şehir Hastanesi",
             department=None,
-            incident_date="yesterday",
+            incident_date="Dün",
             approximate_time=None,
             service_type=None,
-            description_of_event="Waited for almost an hour with zero communication regarding the delay.",
-            extracted_summary="Delay of nearly an hour at Example Hospital.",
+            description_of_event="Bekleme salonunda gecikme hakkında bilgilendirme yapılmadan yaklaşık bir saat beklenmesi.",
+            extracted_summary="Merkez Şehir Hastanesi'nde yaklaşık bir saatlik bekleme süresi gecikmesi.",
             extraction_confidence=0.88
         ),
         "contact_status": ContactStatus.AI_CALL_PENDING.value
     },
     {
-        # Tier 1: Sufficient data -> Approved
+        # Kademe 1: Yeterli veri -> Onaylandı / Doğrudan İş Akışına Sevk
         "case_id": "FB-2026-1002",
         "created_at": "2026-10-01 11:30:00",
         "source_channel": SourceChannel.WEBSITE.value,
-        "original_feedback": "I visited Example Hospital Cardiology on October 3 at around 14:00. I waited 45 minutes despite having an appointment.",
+        "original_feedback": "3 Ekim saat 14:00'te Merkez Şehir Hastanesi Kardiyoloji polikliniğindeki randevuma gittim. Randevum olmasına rağmen banko kaydı 45 dakika sürdü ve muayeneye gecikmeli alındım.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.WAITING_TIME,
             sentiment=SentimentType.NEGATIVE,
-            hospital="Example Hospital",
-            department="Cardiology",
-            incident_date="October 3",
+            hospital="Merkez Şehir Hastanesi",
+            department="Kardiyoloji Polikliniği",
+            incident_date="3 Ekim",
             approximate_time="14:00",
-            service_type="Specialist Consultation",
-            description_of_event="45-minute wait time exceeded despite confirmed appointment.",
-            extracted_summary="Appointment delay of 45 minutes at Cardiology clinic.",
+            service_type="Uzman Muayenesi",
+            description_of_event="Randevu saatine rağmen banko kayıt süresinin 45 dakika uzaması.",
+            extracted_summary="Kardiyoloji polikliniğinde 45 dakikalık randevu gecikmesi.",
             extraction_confidence=0.96
         ),
         "contact_status": ContactStatus.COMPLETED.value
     },
     {
-        # Tier 1: Appreciation -> Approved
+        # Kademe 1: Teşekkür -> Onaylandı
         "case_id": "FB-2026-1003",
         "created_at": "2026-10-02 14:10:00",
         "source_channel": SourceChannel.CALL_CENTER.value,
-        "original_feedback": "The nurse in the pediatric department at Example Hospital was extremely kind and helpful.",
+        "original_feedback": "Merkez Şehir Hastanesi çocuk polikliniğindeki hemşire hanım çocuğumuza son derece şefkatli ve güler yüzlü yaklaştı, kendisine teşekkür ederiz.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.APPRECIATION,
             issue_type=IssueType.APPRECIATION,
             sentiment=SentimentType.POSITIVE,
-            hospital="Example Hospital",
-            department="Pediatrics",
+            hospital="Merkez Şehir Hastanesi",
+            department="Çocuk Sağlığı ve Hastalıkları",
             incident_date=None,
-            staff_role="Nurse",
-            description_of_event="Nursing staff exhibited exceptional kindness and assistance.",
-            extracted_summary="Commendation for pediatric nursing staff member.",
+            staff_role="Hemşire",
+            description_of_event="Pediatri hemşiresinin örnek nezaketi ve hasta odaklı yaklaşımı.",
+            extracted_summary="Çocuk polikliniği hemşire personeline teşekkür ve takdir.",
             extraction_confidence=0.94
         ),
         "contact_status": ContactStatus.COMPLETED.value
     },
     {
-        # Tier 3: Major missing data (Hospital unknown, amount unknown, transaction context vague)
+        # Kademe 3: Kritik eksik veri (Hastane adı yok, tutar ve detay belirsiz)
         "case_id": "FB-2026-1004",
         "created_at": "2026-10-02 16:45:00",
         "source_channel": SourceChannel.WEBSITE.value,
-        "original_feedback": "I was charged twice for the same service yesterday and need someone to call me.",
+        "original_feedback": "Dün muayene sonrası kredi kartımdan iki kez mükerrer çekim yapılmış. Muhasebeye yazdım kimse cevap vermedi, acil tarafıma dönülmesini istiyorum.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.BILLING_PAYMENT,
             sentiment=SentimentType.NEGATIVE,
             hospital=None,
             department=None,
-            incident_date="yesterday",
-            billing_context="Duplicate credit card debit for single procedure.",
-            description_of_event="Patient noticed duplicate billing on bank statement.",
-            extracted_summary="Duplicate charge reported without facility details.",
+            incident_date="Dün",
+            billing_context="Kredi kartı ekstre kaydında tek işlem için iki kez çekim görünmesi.",
+            description_of_event="Hastanın ekstresinde mükerrer işlem tespit edilmesi.",
+            extracted_summary="Hangi hastane şubesi olduğu belirtilmemiş mükerrer çekim şikayeti.",
             extraction_confidence=0.88
         ),
         "contact_status": ContactStatus.CSR_CONTACT_ATTEMPTED.value
     },
     {
-        # Tier 1: Facility Cleanliness -> Approved
+        # Kademe 1: Tesis Temizlik -> Onaylandı
         "case_id": "FB-2026-1005",
         "created_at": "2026-10-03 08:20:00",
         "source_channel": SourceChannel.QR_CODE.value,
-        "original_feedback": "The restroom near radiology at Example Hospital was not clean on October 2.",
+        "original_feedback": "2 Ekim tarihinde Merkez Şehir Hastanesi Radyoloji katındaki lavabolar temiz değildi ve sabunluklar boştu.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.FACILITY_CLEANLINESS,
             sentiment=SentimentType.NEGATIVE,
-            hospital="Example Hospital",
-            department="Radiology",
-            incident_date="October 2",
-            description_of_event="Restroom facility adjacent to radiology wing was unsanitary.",
-            extracted_summary="Housekeeping needed for restroom near Radiology.",
+            hospital="Merkez Şehir Hastanesi",
+            department="Radyoloji",
+            incident_date="2 Ekim",
+            description_of_event="Radyoloji katı lavabo alanının hijyen yetersizliği ve sarf malzeme eksikliği.",
+            extracted_summary="Radyoloji katı lavaboları için kat hizmetleri temizlik ihtiyacı.",
             extraction_confidence=0.92
         ),
         "contact_status": ContactStatus.COMPLETED.value
     },
     {
-        # Tier 3: Major missing data (No hospital, no department, no date)
+        # Kademe 3: Kritik eksik veri (Hastane yok, poliklinik yok, tarih yok)
         "case_id": "FB-2026-1006",
         "created_at": "2026-10-03 10:05:00",
         "source_channel": SourceChannel.EMAIL.value,
-        "original_feedback": "My appointment was cancelled but I was not informed at all.",
+        "original_feedback": "Randevum bana hiçbir SMS veya arama ile bilgi verilmeden iptal edilmiş, hastaneye gelince kapıda kaldım.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.APPOINTMENT,
@@ -139,115 +139,115 @@ SEED_CASES = [
             hospital=None,
             department=None,
             incident_date=None,
-            description_of_event="Appointment was cancelled without prior notification to patient.",
-            extracted_summary="Unnotified appointment cancellation.",
+            description_of_event="Randevunun hastaya önceden bildirim yapılmaksızın iptal edilmesi.",
+            extracted_summary="Haber verilmeksizin yapılan randevu iptali şikayeti.",
             extraction_confidence=0.84
         ),
         "contact_status": ContactStatus.NOT_CONTACTED.value
     },
     {
-        # Tier 2: Minor missing data (Hospital and staff role known, exact desk/clinic missing)
+        # Kademe 2: Küçük eksiklik (Hastane ve unvan biliniyor, hangi banko olduğu eksik)
         "case_id": "FB-2026-1007",
         "created_at": "2026-10-03 13:50:00",
         "source_channel": SourceChannel.SOCIAL_MEDIA.value,
-        "original_feedback": "Registration staff member spoke rudely to me at Example Hospital yesterday morning.",
+        "original_feedback": "Dün sabah Merkez Şehir Hastanesi hasta kayıt bankosundaki görevli arkadaş kaba ve ilgisiz bir üslupla konuştu.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.STAFF_BEHAVIOR,
             sentiment=SentimentType.NEGATIVE,
-            hospital="Example Hospital",
+            hospital="Merkez Şehir Hastanesi",
             department=None,
-            incident_date="yesterday",
-            approximate_time="morning",
-            staff_role="Registration Clerk",
-            description_of_event="Encountered discourteous communication at registration counter.",
-            extracted_summary="Staff behavior complaint regarding registration desk.",
+            incident_date="Dün",
+            approximate_time="Sabah",
+            staff_role="Hasta Kayıt Görevlisi",
+            description_of_event="Hasta kayıt bankosunda nezaketsiz iletişim yaşanması.",
+            extracted_summary="Hasta kabul bankosu personeli hakkında üslup bildirimi.",
             extraction_confidence=0.90
         ),
         "contact_status": ContactStatus.AI_CALL_PENDING.value
     },
     {
-        # Tier 2: Minor missing data (Suggestion has general idea, minor branch context needed)
+        # Kademe 2: Küçük eksiklik (Öneri var, kat / otopark alanı teyidi gerekiyor)
         "case_id": "FB-2026-1008",
         "created_at": "2026-10-04 09:10:00",
         "source_channel": SourceChannel.WEBSITE.value,
-        "original_feedback": "I think Example Hospital should provide clearer parking guidance and arrows.",
+        "original_feedback": "Merkez Şehir Hastanesi yerleşkesinde kapalı otoparkın yönlendirme levhaları ve çıkış okları çok yetersiz, tabelaların belirginleştirilmesini öneriyorum.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.SUGGESTION,
             issue_type=IssueType.PARKING_TRANSPORTATION,
             sentiment=SentimentType.NEUTRAL,
-            hospital="Example Hospital",
-            description_of_event="Proposes enhanced visual wayfinding and lane signage in multi-story parking structure.",
-            extracted_summary="Suggestion for clearer parking wayfinding signs.",
+            hospital="Merkez Şehir Hastanesi",
+            description_of_event="Kapalı otopark katlarındaki yönlendirme ve çıkış tabelalarının güçlendirilmesi önerisi.",
+            extracted_summary="Otopark yönlendirme levhalarının artırılması hakkında gelişim önerisi.",
             extraction_confidence=0.91
         ),
         "contact_status": ContactStatus.AI_CALL_PENDING.value
     },
     {
-        # Tier 3: Major missing data (No hospital, terminal error details vague)
+        # Kademe 3: Kritik eksik veri (Hastane yok, hangi vezne olduğu meçhul)
         "case_id": "FB-2026-1009",
         "created_at": "2026-10-04 14:40:00",
         "source_channel": SourceChannel.QR_CODE.value,
-        "original_feedback": "I could not complete payment because the payment terminal repeatedly failed.",
+        "original_feedback": "Veznede ödeme yapmaya çalışırken POS cihazı sürekli hata verdi ve işlemi tamamlayamadık, sistem kilitlendi.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.TECHNICAL_ISSUE,
             sentiment=SentimentType.NEGATIVE,
             hospital=None,
-            department="Cashier Desk",
-            incident_date="today",
-            billing_context="POS terminal hardware error / timeout.",
-            description_of_event="Payment POS terminal connection timed out multiple times at cashier.",
-            extracted_summary="POS payment terminal failure during patient checkout.",
+            department="Vezne Masası",
+            incident_date="Bugün",
+            billing_context="POS tahsilat terminali zaman aşımı hatası.",
+            description_of_event="Ödeme sırasında banka POS cihazının ardışık olarak hata vermesi.",
+            extracted_summary="Ödeme esnasında yaşanan POS donanım hatası.",
             extraction_confidence=0.87
         ),
         "contact_status": ContactStatus.NOT_CONTACTED.value
     },
     {
-        # Tier 1: Appreciation -> Approved
+        # Kademe 1: Teşekkür -> Onaylandı
         "case_id": "FB-2026-1010",
         "created_at": "2026-10-04 17:00:00",
         "source_channel": SourceChannel.CALL_CENTER.value,
-        "original_feedback": "Everything was excellent. Thank you to the cardiology team at Example Hospital for great care.",
+        "original_feedback": "Her şey mükemmeldi. Merkez Şehir Hastanesi Kardiyoloji ekibine ve doktorumuza gösterdikleri yakın ilgiden dolayı çok teşekkür ederiz.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.APPRECIATION,
             issue_type=IssueType.APPRECIATION,
             sentiment=SentimentType.POSITIVE,
-            hospital="Example Hospital",
-            department="Cardiology",
-            description_of_event="Exemplary clinical care and professional attentiveness by Cardiology team.",
-            extracted_summary="Positive commendation for entire cardiology department.",
+            hospital="Merkez Şehir Hastanesi",
+            department="Kardiyoloji Polikliniği",
+            description_of_event="Kardiyoloji ekibinin üstün klinik ilgisi ve hasta memnuniyeti.",
+            extracted_summary="Kardiyoloji bölümü sağlık personeline teşekkür bildirimi.",
             extraction_confidence=0.97
         ),
         "contact_status": ContactStatus.COMPLETED.value
     },
     {
-        # Tier 2 resolved via simulated AI Voice Call
+        # Kademe 2: AI Sesli Arama ile Çözümlenmiş Vaka
         "case_id": "FB-2026-1011",
         "created_at": "2026-09-30 15:20:00",
         "source_channel": SourceChannel.CALL_CENTER.value,
-        "original_feedback": "I had a delay with my blood test results last Tuesday at Example Hospital.",
+        "original_feedback": "Geçen salı Merkez Şehir Hastanesi'nde kan tahlili sonuçlarımın çıkması çok uzun sürdü.",
         "extracted": ExtractedFeedbackData(
             feedback_type=FeedbackType.COMPLAINT,
             issue_type=IssueType.WAITING_TIME,
             sentiment=SentimentType.NEGATIVE,
-            hospital="Example Hospital",
+            hospital="Merkez Şehir Hastanesi",
             department=None,
-            incident_date="last Tuesday",
-            service_type="Blood test",
-            description_of_event="Phlebotomy test results delayed.",
-            extracted_summary="Laboratory turnaround delay for blood test.",
+            incident_date="Geçen salı",
+            service_type="Kan Tahlili",
+            description_of_event="Flebotomi laboratuvar sonuçlarının onaylanma süresinde gecikme.",
+            extracted_summary="Kan tahlili sonuçlarının çıkış süresinde gecikme yaşanması.",
             extraction_confidence=0.87
         ),
         "contact_status": ContactStatus.AI_CALL_COMPLETED.value,
         "ai_call_data": {
-            "department": "Biochemistry Laboratory",
-            "approximate_time": "10:30 AM"
+            "department": "Biyokimya Laboratuvarı",
+            "approximate_time": "10:30"
         },
         "transcript": (
-            "AI AGENT: Hello, this is Example Hospital Automated Experience Service. We are reviewing your blood test turnaround delay from last Tuesday. Could you confirm which lab unit took your sample?\n"
-            "PATIENT: It was the main Biochemistry Laboratory on the 2nd floor, around 10:30 AM.\n"
-            "AI AGENT: Thank you, we have logged this detail for the lab supervisor. Have a great day!"
+            "YAPAY ZEKA ASİSTANI: Merhaba, Merkez Şehir Hastanesi Hasta Deneyimi Merkezi'nden arıyorum. Geçen salı günkü kan tahlili gecikmeniz hakkında laboratuvar süpervizörümüzle görüşeceğiz. Kan örneğinizi hangi birimde vermiştiniz?\n"
+            "HASTA: 2. kattaki ana Biyokimya Laboratuvarı'nda sabah saat 10:30 civarında vermiştim.\n"
+            "YAPAY ZEKA ASİSTANI: Çok teşekkürler, bu bilgiyi laboratuvar sorumlusuna ilettik. Sağlıklı günler dileriz!"
         )
     }
 ]
@@ -281,8 +281,8 @@ def seed_database(force: bool = False) -> int:
             add_follow_up_entry(
                 case_id=item["case_id"],
                 contact_status=ContactStatus.AI_CALL_COMPLETED.value,
-                additional_information="AI Voice Call completed successfully. Captured Biochemistry Lab, 10:30 AM.",
-                notes="Automated voice call duration: 52s."
+                additional_information="Yapay Zeka Sesli Arama başarıyla tamamlandı. Alınan bilgiler: Biyokimya Laboratuvarı, 10:30.",
+                notes="Otonom sesli arama süresi: 52 saniye."
             )
             overrides = item["ai_call_data"]
             reeval_res = evaluate_completeness(ext, confirmed_overrides=overrides)

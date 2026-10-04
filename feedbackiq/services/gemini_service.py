@@ -100,8 +100,8 @@ def _heuristic_mock_extraction(text: str, context: Optional[str] = None) -> Extr
         hospital = hosp_match.group(1).strip()
     elif "example hospital" in full_text:
         hospital = "Example Hospital"
-    elif "medicana" in full_text:
-        hospital = "Medicana Hospital"
+    elif "merkez" in full_text:
+        hospital = "Merkez Sağlık Hastanesi"
 
     # Detect Department
     department = None

@@ -114,6 +114,6 @@ def test_ai_voice_call_simulation():
     )
 
     assert call_result.completeness_score >= 80
-    assert "AI AGENT:" in transcript
+    assert "YAPAY ZEKA ASİSTANI:" in transcript or "AI AGENT:" in transcript
     assert updated_case["approximate_time"] == "14:15"
     assert updated_case["triage_tier"] == TriageTier.TIER_1_APPROVED.value
