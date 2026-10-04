@@ -1,0 +1,23 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# SQLite databases (keep local runtime separate)
+# Note: feedbackiq.db is generated on initial run
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Environment & credentials
+.env
+!.env.example
+
+# macOS artifacts
+.DS_Store
