@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -94,6 +94,11 @@
           Mimari
         </button>
       </nav>
+
+      <div class="header-status">
+        <span class="status-indicator-dot"></span>
+        <span class="header-status-text">Otonom Triage Canlı</span>
+      </div>
     </div>
   </header>
 
@@ -119,29 +124,88 @@
       <!-- KPI Grid -->
       <div class="kpi-grid">
         <div class="kpi-box">
-          <span class="kpi-title">Toplam Kayıt</span>
+          <div class="kpi-top">
+            <span class="kpi-title">Toplam Kayıt</span>
+            <div class="kpi-icon-badge">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+          </div>
           <span class="kpi-number" id="kpiTotal">-</span>
-          <span class="kpi-foot">Tüm kanallardan gelen</span>
+          <div class="kpi-foot">
+            <span class="kpi-foot-pill">Tüm Kanallar</span>
+            <span>Gelen geri bildirimler</span>
+          </div>
         </div>
+
         <div class="kpi-box">
-          <span class="kpi-title">Aşama 1: Onaylandı</span>
+          <div class="kpi-top">
+            <span class="kpi-title">Aşama 1: Onaylandı</span>
+            <div class="kpi-icon-badge icon-success">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+          </div>
           <span class="kpi-number text-success" id="kpiApproved">-</span>
-          <span class="kpi-foot">Yeterli veri, doğrudan sevk</span>
+          <div class="kpi-foot">
+            <span class="kpi-foot-pill pill-success">Doğrudan Sevk</span>
+            <span>Yeterli ve eksiksiz veri</span>
+          </div>
         </div>
+
         <div class="kpi-box">
-          <span class="kpi-title">Kademe 2: AI Sesli Arama</span>
+          <div class="kpi-top">
+            <span class="kpi-title">Kademe 2: AI Sesli Arama</span>
+            <div class="kpi-icon-badge icon-indigo">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+              </svg>
+            </div>
+          </div>
           <span class="kpi-number text-indigo" id="kpiAiCall">-</span>
-          <span class="kpi-foot">Küçük eksiklikler, otonom bot</span>
+          <div class="kpi-foot">
+            <span class="kpi-foot-pill pill-indigo">Otonom Bot</span>
+            <span>Küçük bilgi eksikliği</span>
+          </div>
         </div>
+
         <div class="kpi-box">
-          <span class="kpi-title">Kademe 3: Müşteri Hizmetleri</span>
+          <div class="kpi-top">
+            <span class="kpi-title">Kademe 3: Müşteri Hizmetleri</span>
+            <div class="kpi-icon-badge icon-danger">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+          </div>
           <span class="kpi-number text-danger" id="kpiCsr">-</span>
-          <span class="kpi-foot">Kritik eksiklikler, insan temsilci</span>
+          <div class="kpi-foot">
+            <span class="kpi-foot-pill pill-danger">İnsan Masası</span>
+            <span>Kritik veri eksikliği</span>
+          </div>
         </div>
+
         <div class="kpi-box">
-          <span class="kpi-title">Ortalama Kalite Puanı</span>
+          <div class="kpi-top">
+            <span class="kpi-title">Ortalama Kalite Puanı</span>
+            <div class="kpi-icon-badge icon-indigo">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+          </div>
           <span class="kpi-number" id="kpiAvgScore">-</span>
-          <span class="kpi-foot">Deterministik 0-100 ölçeği</span>
+          <div class="kpi-foot">
+            <span class="kpi-foot-pill pill-indigo">0-100 Endeks</span>
+            <span>Deterministik kural motoru</span>
+          </div>
         </div>
       </div>
 
@@ -207,12 +271,15 @@
       <div class="scenarios-bar">
         <span class="scenarios-label">Hazır Test Senaryoları:</span>
         <button class="scenario-chip" id="btnScen1">
+          <span class="chip-dot dot-green"></span>
           <strong>Senaryo 1:</strong> Yeterli Veri (Kademe 1: Onaylandı)
         </button>
         <button class="scenario-chip" id="btnScen2">
+          <span class="chip-dot dot-indigo"></span>
           <strong>Senaryo 2:</strong> Küçük Eksiklik (Kademe 2: AI Sesli Arama)
         </button>
         <button class="scenario-chip" id="btnScen3">
+          <span class="chip-dot dot-rose"></span>
           <strong>Senaryo 3:</strong> Kritik Eksiklik (Kademe 3: Müşteri Hizmetleri)
         </button>
       </div>

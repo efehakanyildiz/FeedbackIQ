@@ -231,21 +231,21 @@ function renderAnalysisResult(data) {
   const missingRowsHtml = (result.missing_field_items && result.missing_field_items.length > 0)
     ? result.missing_field_items.map(m => `
         <div style="margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid #f8fafc; font-size:0.83rem;">
-          <div>
+          <div style="display:flex; align-items:center; gap:6px;">
             <strong style="color:#334155;">${m.display_name}</strong>
-            <span style="background:${m.is_critical ? '#fee2e2' : '#f1f5f9'}; color:${m.is_critical ? '#991b1b' : '#475569'}; font-size:0.68rem; font-weight:700; padding:1px 5px; border-radius:3px; margin-left:4px;">
+            <span class="field-status-tag ${m.is_critical ? 'critical' : 'missing'}">
               ${m.is_critical ? 'Büyük Eksik' : 'Eksik'}
             </span>
           </div>
-          <div style="color:var(--primary); font-size:0.8rem; margin-top:2px;">Önerilen Soru: "${m.suggested_question}"</div>
+          <div style="color:var(--primary); font-size:0.8rem; margin-top:3px; font-weight:500;">Önerilen Soru: "${m.suggested_question}"</div>
         </div>
       `).join("")
     : `<div style="color:#059669; font-weight:600; font-size:0.85rem; padding:8px 0;">Eksik operasyonel parametre bulunmuyor.</div>`;
 
   container.innerHTML = `
     <div class="notice-box ${tierClass}">
-      <div style="font-weight:800; font-size:1rem; margin-bottom:4px;">${tierTitle} &bull; Vaka: ${case_id}</div>
-      <div style="font-size:0.88rem;">${result.triage_reason}</div>
+      <div style="font-weight:800; font-size:1rem; margin-bottom:4px; font-family:var(--font-heading);">${tierTitle} &bull; <span style="font-family:var(--font-mono); font-size:0.95rem;">${case_id}</span></div>
+      <div style="font-size:0.88rem; line-height:1.5;">${result.triage_reason}</div>
       ${tierActionHtml}
     </div>
 
@@ -254,18 +254,18 @@ function renderAnalysisResult(data) {
         <div>
           <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#64748b; letter-spacing:0.05em;">Operasyonel Kalite Skoru</div>
           <div style="display:flex; align-items:baseline; gap:10px; margin-top:4px;">
-            <span style="font-size:2.2rem; font-weight:800; color:var(--text-main);">${score}</span>
+            <span style="font-size:2.4rem; font-weight:800; color:var(--text-main); font-family:var(--font-heading); font-variant-numeric:tabular-nums;">${score}</span>
             <span style="color:#94a3b8; font-size:1rem; font-weight:700;">/ 100</span>
             <span class="badge-pill ${getTierBadgeClass(tier)}">${getTierBadgeLabel(tier)}</span>
           </div>
         </div>
         <div style="min-width:220px; flex:1; max-width:320px;">
-          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#64748b; margin-bottom:4px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#64748b; margin-bottom:6px; font-weight:600;">
             <span>Tamamlanma Oranı</span>
-            <span>${score}%</span>
+            <span style="font-family:var(--font-mono); font-weight:700;">${score}%</span>
           </div>
-          <div style="background:#e2e8f0; border-radius:3px; height:8px; overflow:hidden;">
-            <div style="background:var(--primary-gradient); width:${score}%; height:100%;"></div>
+          <div style="background:#f1f5f9; border-radius:9999px; height:8px; overflow:hidden; border:1px solid #e2e8f0;">
+            <div style="background:var(--primary-gradient); width:${score}%; height:100%; border-radius:9999px; transition:width 0.4s ease;"></div>
           </div>
         </div>
       </div>
@@ -351,15 +351,15 @@ async function loadDashboard() {
   recent.forEach(c => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><strong>${c.case_id}</strong></td>
-      <td>${c.created_at}</td>
-      <td>${c.source_channel}</td>
-      <td>${c.issue_type}</td>
+      <td><span style="font-family:var(--font-mono); font-weight:700; color:#0f172a; font-size:0.86rem;">${c.case_id}</span></td>
+      <td><span style="font-family:var(--font-mono); font-size:0.8rem; color:#64748b;">${c.created_at}</span></td>
+      <td><span style="font-size:0.78rem; font-weight:600; color:#475569; background:#f8fafc; border:1px solid #e2e8f0; padding:2px 7px; border-radius:4px;">${c.source_channel}</span></td>
+      <td style="font-weight:600; color:#1e293b;">${c.issue_type}</td>
       <td><span class="score-badge-element ${getScoreBadgeClass(c.completeness_score)}">${c.completeness_score}/100</span></td>
       <td><span class="badge-pill ${getTierBadgeClass(c.triage_tier)}">${getTierBadgeLabel(c.triage_tier)}</span></td>
-      <td>${c.status}</td>
+      <td style="color:#64748b; font-size:0.82rem; font-weight:500;">${c.status}</td>
       <td>
-        <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="inspectCase('${c.case_id}')">İncele</button>
+        <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.75rem; border-radius:6px; font-weight:600;" onclick="inspectCase('${c.case_id}')">İncele</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -378,13 +378,13 @@ async function loadDashboard() {
       const pct = Math.round((row.count / total) * 100);
       const barColor = row.triage_tier === "Approved" ? "var(--tier1-green)" : row.triage_tier === "AI Call Scheduled" ? "var(--primary)" : "var(--tier3-rose)";
       distContainer.innerHTML += `
-        <div style="margin-bottom:12px;">
-          <div style="display:flex; justify-content:space-between; font-size:0.83rem; font-weight:700; margin-bottom:4px;">
+        <div style="margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.83rem; font-weight:700; margin-bottom:5px;">
             <span>${getTierBadgeLabel(row.triage_tier)}</span>
-            <span style="color:#64748b;">${row.count} vaka (${pct}%)</span>
+            <span style="color:#64748b; font-family:var(--font-mono); font-size:0.78rem;">${row.count} vaka (${pct}%)</span>
           </div>
-          <div style="background:#e2e8f0; border-radius:3px; height:8px; overflow:hidden;">
-            <div style="background:${barColor}; width:${pct}%; height:100%;"></div>
+          <div style="background:#f1f5f9; border-radius:9999px; height:8px; overflow:hidden; border:1px solid #e2e8f0;">
+            <div style="background:${barColor}; width:${pct}%; height:100%; border-radius:9999px; transition:width 0.4s ease;"></div>
           </div>
         </div>
       `;
@@ -395,9 +395,9 @@ async function loadDashboard() {
     missingContainer.innerHTML = "";
     data.top_missing.slice(0, 5).forEach(m => {
       missingContainer.innerHTML += `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #f8fafc; font-size:0.85rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #f8fafc; font-size:0.85rem;">
           <span style="font-weight:600; color:#334155;">${formatFieldName(m.field_name)}</span>
-          <span style="background:#f1f5f9; color:#475569; font-weight:700; padding:2px 8px; border-radius:4px; font-size:0.75rem;">
+          <span class="kpi-foot-pill" style="font-weight:700; font-size:0.74rem;">
             ${m.count} vakada eksik
           </span>
         </div>
@@ -438,11 +438,11 @@ function loadAiQueue() {
     const card = document.createElement("div");
     card.className = "glass-card";
     card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
         <div>
-          <span style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-right:8px;">${c.case_id}</span>
-          <span style="font-size:0.8rem; color:#64748b; margin-right:8px;">${c.created_at}</span>
-          <span style="background:#f1f5f9; color:#475569; padding:2px 7px; border-radius:3px; font-size:0.72rem; font-weight:700;">
+          <span style="font-family:var(--font-mono); font-size:1.15rem; font-weight:800; color:var(--text-main); margin-right:8px;">${c.case_id}</span>
+          <span style="font-family:var(--font-mono); font-size:0.8rem; color:#64748b; margin-right:8px;">${c.created_at}</span>
+          <span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 7px; border-radius:4px; font-size:0.72rem; font-weight:600;">
             Kanal: ${c.source_channel}
           </span>
         </div>
@@ -451,10 +451,10 @@ function loadAiQueue() {
           ${tierBadgeHtml}
         </div>
       </div>
-      <div style="font-size:0.9rem; color:#334155; margin-bottom:10px; font-style:italic; background:#f8fafc; padding:10px 14px; border-radius:4px; border-left:3px solid var(--primary);">
+      <div style="font-size:0.88rem; color:#334155; margin-bottom:12px; font-style:normal; background:#f8fafc; padding:12px 16px; border-radius:6px; border:1px solid #e2e8f0; border-left:3px solid var(--primary); line-height:1.6;">
         "${c.original_feedback}"
       </div>
-      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.82rem; color:#64748b;">
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.82rem; color:#64748b; flex-wrap:wrap; gap:8px;">
         <div>
           <strong>Kategori:</strong> ${c.issue_type} &bull;
           <strong>Arama Durumu:</strong> <span style="color:var(--primary); font-weight:700;">${c.contact_status}</span>
@@ -488,11 +488,11 @@ function loadCsrQueue() {
     const card = document.createElement("div");
     card.className = "glass-card";
     card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
         <div>
-          <span style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-right:8px;">${c.case_id}</span>
-          <span style="font-size:0.8rem; color:#64748b; margin-right:8px;">${c.created_at}</span>
-          <span style="background:#f1f5f9; color:#475569; padding:2px 7px; border-radius:3px; font-size:0.72rem; font-weight:700;">
+          <span style="font-family:var(--font-mono); font-size:1.15rem; font-weight:800; color:var(--text-main); margin-right:8px;">${c.case_id}</span>
+          <span style="font-family:var(--font-mono); font-size:0.8rem; color:#64748b; margin-right:8px;">${c.created_at}</span>
+          <span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 7px; border-radius:4px; font-size:0.72rem; font-weight:600;">
             Kanal: ${c.source_channel}
           </span>
         </div>
@@ -501,10 +501,10 @@ function loadCsrQueue() {
           <span class="badge-pill tier-pill-csr">Kademe 3: Temsilci İncelemesi</span>
         </div>
       </div>
-      <div style="font-size:0.9rem; color:#334155; margin-bottom:10px; font-style:italic; background:#f8fafc; padding:10px 14px; border-radius:4px; border-left:3px solid var(--tier3-rose);">
+      <div style="font-size:0.88rem; color:#334155; margin-bottom:12px; font-style:normal; background:#f8fafc; padding:12px 16px; border-radius:6px; border:1px solid #e2e8f0; border-left:3px solid var(--tier3-rose); line-height:1.6;">
         "${c.original_feedback}"
       </div>
-      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.82rem; color:#64748b;">
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.82rem; color:#64748b; flex-wrap:wrap; gap:8px;">
         <div>
           <strong>Kategori:</strong> ${c.issue_type} &bull;
           <strong>Eksik Alan Sayısı:</strong> <span style="color:#b91c1c; font-weight:700;">${c.missing_fields_count}</span> &bull;
@@ -752,8 +752,8 @@ function renderCaseDetailWorkspace(detail) {
     <div class="glass-card" style="margin-bottom:1.2rem;">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
-          <span style="font-size:1.35rem; font-weight:800; color:#0f172a; margin-right:12px;">Vaka Kaydı: ${c.case_id}</span>
-          <span style="font-size:0.84rem; color:#64748b;">Tarih: ${c.created_at} &bull; Kanal: ${c.source_channel}</span>
+          <span style="font-size:1.35rem; font-weight:800; color:#0f172a; margin-right:12px;">Vaka Kaydı: <span style="font-family:var(--font-mono); font-size:1.25rem;">${c.case_id}</span></span>
+          <span style="font-size:0.84rem; color:#64748b;">Tarih: <span style="font-family:var(--font-mono);">${c.created_at}</span> &bull; Kanal: <span style="background:#f8fafc; border:1px solid #e2e8f0; padding:1px 6px; border-radius:4px; font-weight:600; color:#475569;">${c.source_channel}</span></span>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="score-badge-element ${getScoreBadgeClass(c.completeness_score)}">${c.completeness_score}/100</span>
@@ -765,7 +765,7 @@ function renderCaseDetailWorkspace(detail) {
 
     <div class="glass-card">
       <div class="card-title">Orijinal Hasta Mesajı</div>
-      <div style="background:#f8fafc; border-left:3px solid var(--primary); padding:1rem 1.2rem; border-radius:4px; font-size:0.92rem; color:#1e293b; line-height:1.5;">
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:3px solid var(--primary); padding:1rem 1.2rem; border-radius:6px; font-size:0.92rem; color:#1e293b; line-height:1.6;">
         "${c.original_feedback}"
       </div>
       <div style="margin-top:8px; font-size:0.8rem; color:#64748b;">
@@ -788,7 +788,7 @@ function renderCaseDetailWorkspace(detail) {
     </div>
 
     <!-- CSR Investigation & Re-evaluation Form -->
-    <div class="glass-card" style="border: 2px solid var(--primary-glow); background:#ffffff;">
+    <div class="glass-card" style="border: 1px solid #cbd5e1; background:#ffffff; box-shadow:var(--shadow-sm);">
       <div class="card-title" style="color:var(--primary-dark); font-size:1.05rem;">
         Müşteri Hizmetleri Masası: Operasyonel Bilgileri Tamamlama ve Teyit Formu
       </div>
@@ -1077,13 +1077,13 @@ async function loadAnalytics() {
     channelContainer.innerHTML = "";
     data.channel_quality.forEach(ch => {
       channelContainer.innerHTML += `
-        <div style="margin-bottom:12px;">
-          <div style="display:flex; justify-content:space-between; font-size:0.83rem; font-weight:700; margin-bottom:4px;">
+        <div style="margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.83rem; font-weight:700; margin-bottom:5px;">
             <span>${ch.source_channel}</span>
-            <span style="color:#64748b;">${ch.avg_score}/100 Puan (${ch.total_cases} vaka)</span>
+            <span style="color:#64748b; font-family:var(--font-mono); font-size:0.78rem;">${ch.avg_score}/100 Puan (${ch.total_cases} vaka)</span>
           </div>
-          <div style="background:#e2e8f0; border-radius:3px; height:8px; overflow:hidden;">
-            <div style="background:var(--primary-gradient); width:${ch.avg_score}%; height:100%;"></div>
+          <div style="background:#f1f5f9; border-radius:9999px; height:8px; overflow:hidden; border:1px solid #e2e8f0;">
+            <div style="background:var(--primary-gradient); width:${ch.avg_score}%; height:100%; border-radius:9999px; transition:width 0.4s ease;"></div>
           </div>
         </div>
       `;
@@ -1097,13 +1097,13 @@ async function loadAnalytics() {
       const pct = Math.round((t.count / total) * 100);
       const color = t.triage_tier === "Approved" ? "var(--tier1-green)" : t.triage_tier === "AI Call Scheduled" ? "var(--primary)" : "var(--tier3-rose)";
       tierContainer.innerHTML += `
-        <div style="margin-bottom:12px;">
-          <div style="display:flex; justify-content:space-between; font-size:0.83rem; font-weight:700; margin-bottom:4px;">
+        <div style="margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.83rem; font-weight:700; margin-bottom:5px;">
             <span>${getTierBadgeLabel(t.triage_tier)}</span>
-            <span style="color:#64748b;">${t.count} kayıt (${pct}%)</span>
+            <span style="color:#64748b; font-family:var(--font-mono); font-size:0.78rem;">${t.count} kayıt (${pct}%)</span>
           </div>
-          <div style="background:#e2e8f0; border-radius:3px; height:8px; overflow:hidden;">
-            <div style="background:${color}; width:${pct}%; height:100%;"></div>
+          <div style="background:#f1f5f9; border-radius:9999px; height:8px; overflow:hidden; border:1px solid #e2e8f0;">
+            <div style="background:${color}; width:${pct}%; height:100%; border-radius:9999px; transition:width 0.4s ease;"></div>
           </div>
         </div>
       `;
