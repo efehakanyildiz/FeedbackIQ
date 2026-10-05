@@ -99,7 +99,10 @@ def test_ai_voice_call_simulation():
     extracted, is_live, err = extract_feedback_info(feedback_text)
     result = evaluate_completeness(extracted)
 
-    assert result.triage_tier == TriageTier.TIER_2_AI_CALL
+    assert result.completeness_score == 90
+    assert result.triage_tier == TriageTier.TIER_1_APPROVED
+    assert result.requires_ai_call is True
+    assert "approximate_time" in result.missing_fields
 
     case_dict = extracted.model_dump()
     case_dict["case_id"] = "FB-TEST-002"

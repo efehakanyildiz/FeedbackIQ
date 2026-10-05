@@ -6,18 +6,18 @@ Tüm açıklamalar ve iş kuralları Türkçe olarak yapılandırılmıştır.
 from typing import Dict, Any, List
 
 # Tamamlanma eşik değerleri
-THRESHOLD_COMPLETE = 80
+THRESHOLD_COMPLETE = 90
 THRESHOLD_NEEDS_REVIEW = 50
 
 # Şikayet/Bildirim Türüne Göre Ağırlık ve Kritik Alan Konfigürasyonu
 # Puanlama Modeli:
 # - Başlangıç Skoru: 100
 # - Büyük Eksikler (critical_fields): Her biri -30 puan
-# - Küçük Eksikler (minor_fields): Her biri -5 puan
-# - Triage:
-#     * 0 eksik -> Kademe 1: Onaylandı (100 Puan)
-#     * 1-4 küçük eksik veya 1 büyük eksik -> Kademe 2: Yapay Zeka Asistanı (AI Sesli Bot)
-#     * 2 veya daha fazla büyük eksik veya skor < 50 -> Kademe 3: Müşteri Hizmetleri Masası
+# - Küçük Eksikler (minor_fields): Her biri -10 puan
+# - Triage Kademeleri:
+#     * Skor >= 90 -> Aşama 1: Onaylandı (eksik varsa AI arama butonu da açık tutulur)
+#     * 50 <= Skor < 90 -> Kademe 2: Yapay Zeka Asistanı (AI Sesli Bot)
+#     * Skor < 50 veya >= 2 büyük eksik -> Kademe 3: Müşteri Hizmetleri Masası
 ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
     "Bekleme Süresi": {
         "critical_fields": ["hospital", "department", "description_of_event"],
@@ -26,8 +26,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
             "hospital": 30,
             "department": 30,
             "description_of_event": 30,
-            "approximate_time": 5,
-            "incident_date": 5,
+            "approximate_time": 10,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "Bekleme süresi şikayetlerinde kuyruk ve randevu loglarını denetlemek için hastane şubesi ve poliklinik bilgisi zorunludur."
@@ -39,9 +39,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
             "hospital": 30,
             "department": 30,
             "description_of_event": 30,
-            "approximate_time": 5,
-            "incident_date": 5,
-            "staff_role": 5,
+            "approximate_time": 10,
+            "incident_date": 10,
+            "staff_role": 10,
         },
         "or_groups": [
             ("staff_role", "staff_name"),
@@ -55,8 +55,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
             "hospital": 30,
             "billing_context": 30,
             "description_of_event": 30,
-            "department": 5,
-            "incident_date": 5,
+            "department": 10,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "Ödeme ve fatura incelemelerinde muhasebe mutabakatı için hastane şubesi ve ödeme tutarsızlığı detayları zorunludur."
@@ -68,8 +68,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
             "hospital": 30,
             "department": 30,
             "description_of_event": 30,
-            "approximate_time": 5,
-            "incident_date": 5,
+            "approximate_time": 10,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "Randevu aksaklıklarında HBYS kayıtlarını denetlemek için hastane şubesi ve poliklinik / uzmanlık alanı zorunludur."
@@ -81,8 +81,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
             "hospital": 30,
             "department": 30,
             "description_of_event": 30,
-            "approximate_time": 5,
-            "incident_date": 5,
+            "approximate_time": 10,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "Hasta kabul ve kayıt aksaklıklarında desk işlemlerini incelemek için hastane lokasyonu ve birim bilgisi zorunludur."
@@ -94,8 +94,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
             "hospital": 30,
             "department": 30,
             "description_of_event": 30,
-            "approximate_time": 5,
-            "incident_date": 5,
+            "approximate_time": 10,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "Hijyen ve teknik altyapı bildirimlerinde temizlik ekiplerini yönlendirmek için tam hastane ve birim/kat bilgisi zorunludur."
@@ -107,9 +107,9 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
             "hospital": 30,
             "department": 30,
             "description_of_event": 30,
-            "incident_date": 5,
-            "approximate_time": 5,
-            "staff_role": 5,
+            "incident_date": 10,
+            "approximate_time": 10,
+            "staff_role": 10,
         },
         "or_groups": [
             ("staff_role", "staff_name"),
@@ -123,8 +123,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
             "hospital": 30,
             "department": 30,
             "description_of_event": 30,
-            "approximate_time": 5,
-            "incident_date": 5,
+            "approximate_time": 10,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "İletişim eksikliklerinde hasta bilgilendirme süreçlerini netleştirmek için hastane ve birim bağlamı zorunludur."
@@ -135,8 +135,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "weights": {
             "hospital": 30,
             "description_of_event": 30,
-            "department": 5,
-            "incident_date": 5,
+            "department": 10,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "Sistem arızalarında arızalanan cihaz veya yazılımın açıkça tanımlanması gereklidir."
@@ -147,8 +147,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "weights": {
             "hospital": 30,
             "description_of_event": 30,
-            "department": 5,
-            "incident_date": 5,
+            "department": 10,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "Yemek ve ikram bildirimlerinde dağıtım servisini denetlemek için hastane ve servis katı bilgisi gereklidir."
@@ -159,7 +159,7 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "weights": {
             "hospital": 30,
             "description_of_event": 30,
-            "incident_date": 5,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "Otopark bildirimlerinde yerleşke ve otopark alanı tanımı gereklidir."
@@ -169,8 +169,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "minor_fields": ["hospital", "department"],
         "weights": {
             "description_of_event": 30,
-            "hospital": 5,
-            "department": 5,
+            "hospital": 10,
+            "department": 10,
         },
         "or_groups": [
             ("hospital", "department"),
@@ -182,8 +182,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "minor_fields": ["hospital", "department"],
         "weights": {
             "description_of_event": 30,
-            "hospital": 5,
-            "department": 5,
+            "hospital": 10,
+            "department": 10,
         },
         "or_groups": [],
         "explanation": "Öneri kayıtlarında uygulanabilir operasyonel fikir ve bağlamın açıklanması gereklidir."
@@ -194,8 +194,8 @@ ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
         "weights": {
             "hospital": 30,
             "description_of_event": 30,
-            "department": 5,
-            "incident_date": 5,
+            "department": 10,
+            "incident_date": 10,
         },
         "or_groups": [],
         "explanation": "Kategorize edilmemiş geri bildirimlerde ön inceleme için yeterli açıklama ve bağlam gereklidir."

@@ -167,12 +167,25 @@ function renderAnalysisResult(data) {
 
   if (tier === "Approved") {
     tierClass = "notice-box-success";
-    tierTitle = "Kademe 1: Onaylandı / Doğrudan İş Akışına Sevk";
-    tierActionHtml = `
-      <div style="margin-top:10px; font-weight:700; color:#065f46;">
-        Tüm operasyonel gereksinimler eksiksiz tespit edildi. Vaka doğrudan ilgili poliklinik yöneticisine aktarılmıştır.
-      </div>
-    `;
+    tierTitle = "Aşama 1: Onaylandı / Yeterli Veri";
+    if (result.requires_ai_call || (result.missing_fields && result.missing_fields.length > 0)) {
+      tierActionHtml = `
+        <div style="margin-top:10px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <span style="font-weight:700; color:#065f46;">
+            Vaka onay eşiğini (90+) karşıladı ve onaylandı.
+          </span>
+          <button class="btn btn-primary" onclick="openAiCallFromAnalysis('${case_id}')">
+            Yapay Zeka Sesli Aramasını Başlat
+          </button>
+        </div>
+      `;
+    } else {
+      tierActionHtml = `
+        <div style="margin-top:10px; font-weight:700; color:#065f46;">
+          Tüm operasyonel gereksinimler eksiksiz tespit edildi. Vaka doğrudan ilgili poliklinik yöneticisine aktarılmıştır.
+        </div>
+      `;
+    }
   } else if (tier === "AI Call Scheduled") {
     tierClass = "notice-box-info";
     tierTitle = "Kademe 2: Yapay Zeka Sesli Arama Planlandı";
@@ -221,7 +234,7 @@ function renderAnalysisResult(data) {
           <div>
             <strong style="color:#334155;">${m.display_name}</strong>
             <span style="background:${m.is_critical ? '#fee2e2' : '#f1f5f9'}; color:${m.is_critical ? '#991b1b' : '#475569'}; font-size:0.68rem; font-weight:700; padding:1px 5px; border-radius:3px; margin-left:4px;">
-              ${m.is_critical ? 'BÜYÜK EKSİK (-30 Puan)' : 'KÜÇÜK EKSİK (-5 Puan)'}
+              ${m.is_critical ? 'BÜYÜK EKSİK (-30 Puan)' : 'KÜÇÜK EKSİK (-10 Puan)'}
             </span>
           </div>
           <div style="color:var(--primary); font-size:0.8rem; margin-top:2px;">Önerilen Soru: "${m.suggested_question}"</div>
@@ -395,23 +408,33 @@ async function loadDashboard() {
   }
 }
 
-// AI Voice Queue (Tier 2) Loader
+// AI Voice Queue Loader
 function loadAiQueue() {
   const container = document.getElementById("aiQueueCardsContainer");
   container.innerHTML = "";
 
-  const aiCases = appState.cases.filter(c => c.triage_tier === "AI Call Scheduled" || c.status === "AI Call Scheduled");
+  const aiCases = appState.cases.filter(c => 
+    c.triage_tier === "AI Call Scheduled" || 
+    c.status === "AI Call Scheduled" ||
+    (c.completeness_score >= 90 && c.completeness_score < 100 && c.contact_status !== "Completed" && c.contact_status !== "AI Call Completed") ||
+    (c.triage_tier === "Approved" && c.missing_fields_count > 0 && c.contact_status !== "Completed" && c.contact_status !== "AI Call Completed")
+  );
 
   if (aiCases.length === 0) {
     container.innerHTML = `
       <div class="notice-box notice-box-success">
-        Yapay Zeka Sesli Arama Kuyruğunda bekleyen vaka bulunmuyor. Tüm küçük veri eksiklikleri arandı ve onaylandı.
+        Yapay Zeka Sesli Arama Kuyruğunda bekleyen vaka bulunmuyor. Tüm veri eksiklikleri tamamlandı ve onaylandı.
       </div>
     `;
     return;
   }
 
   aiCases.forEach(c => {
+    const isApprovedTier = c.completeness_score >= 90 || c.triage_tier === "Approved";
+    const tierBadgeHtml = isApprovedTier
+      ? `<span class="badge-pill tier-pill-1">Aşama 1: Onaylandı</span>`
+      : `<span class="badge-pill tier-pill-ai">Kademe 2: AI Sesli Arama</span>`;
+
     const card = document.createElement("div");
     card.className = "glass-card";
     card.innerHTML = `
@@ -425,7 +448,7 @@ function loadAiQueue() {
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="score-badge-element ${getScoreBadgeClass(c.completeness_score)}">${c.completeness_score}/100</span>
-          <span class="badge-pill tier-pill-ai">Kademe 2: AI Sesli Arama</span>
+          ${tierBadgeHtml}
         </div>
       </div>
       <div style="font-size:0.9rem; color:#334155; margin-bottom:10px; font-style:italic; background:#f8fafc; padding:10px 14px; border-radius:4px; border-left:3px solid var(--primary);">
@@ -639,12 +662,12 @@ function buildSelectOptions(optionsList, selectedVal, placeholder, allowCustom =
   return html;
 }
 
-window.setCsrTime = function(t) {
+window.setCsrTime = function (t) {
   const el = document.getElementById("csrTime");
   if (el) el.value = t;
 };
 
-window.setCsrDate = function(type) {
+window.setCsrDate = function (type) {
   const el = document.getElementById("csrDate");
   if (!el) return;
   const today = new Date();
@@ -657,7 +680,7 @@ window.setCsrDate = function(type) {
   }
 };
 
-window.handleSelectCustomToggle = function(selectEl, customInputId) {
+window.handleSelectCustomToggle = function (selectEl, customInputId) {
   const customEl = document.getElementById(customInputId);
   if (!customEl) return;
   if (selectEl.value === "__custom__") {
@@ -692,7 +715,7 @@ function renderCaseDetailWorkspace(detail) {
     const isMissing = missingSet.has(f.key) || !f.val;
     const isCrit = criticalSet.has(f.key);
     const statusTag = isMissing
-      ? `<span class="field-status-tag ${isCrit ? 'critical' : 'missing'}">${isCrit ? 'BÜYÜK EKSİK (-30 Puan)' : 'KÜÇÜK EKSİK (-5 Puan)'}</span>`
+      ? `<span class="field-status-tag ${isCrit ? 'critical' : 'missing'}">${isCrit ? 'BÜYÜK EKSİK (-30 Puan)' : 'KÜÇÜK EKSİK (-10 Puan)'}</span>`
       : `<span class="field-status-tag detected">Teyitli</span>`;
 
     return `
@@ -714,7 +737,7 @@ function renderCaseDetailWorkspace(detail) {
           <div>
             <strong style="color:#334155;">${formatFieldName(m.field_name)}</strong>
             <span class="field-status-tag ${m.is_critical ? 'critical' : 'missing'}" style="margin-left:4px;">
-              ${m.is_critical ? 'BÜYÜK EKSİK (-30 Puan)' : 'KÜÇÜK EKSİK (-5 Puan)'}
+              ${m.is_critical ? 'BÜYÜK EKSİK (-30 Puan)' : 'KÜÇÜK EKSİK (-10 Puan)'}
             </span>
           </div>
           <div style="color:var(--primary); font-size:0.8rem; margin-top:2px;">Önerilen İletişim Sorusu: "${getQuestionText(m.field_name)}"</div>
@@ -1099,13 +1122,13 @@ function getTierBadgeClass(tier) {
 }
 
 function getTierBadgeLabel(tier) {
-  if (tier === "Approved") return "Kademe 1: Onaylandı";
+  if (tier === "Approved") return "Aşama 1: Onaylandı";
   if (tier === "AI Call Scheduled") return "Kademe 2: AI Sesli Arama";
   return "Kademe 3: Müşteri Hizmetleri";
 }
 
 function getScoreBadgeClass(score) {
-  if (score >= 80) return "tier-pill-1";
+  if (score >= 90) return "tier-pill-1";
   if (score >= 50) return "tier-pill-ai";
   return "tier-pill-csr";
 }

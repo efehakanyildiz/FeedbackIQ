@@ -1,8 +1,8 @@
 """
 Deterministic Python Rules Engine for Completeness Evaluation and 3-Tier Triage:
-1. Tier 1: Sufficient Data -> Approved / Ready for Workflow
-2. Tier 2: Minor Missing Data -> Automated AI Voice Call Scheduled
-3. Tier 3: Major Missing Data -> Human Customer Service Escalation
+1. Tier 1: Sufficient Data (Score >= 90) -> Approved / Ready for Workflow (AI call optional if minor gap exists)
+2. Tier 2: Minor Missing Data (50 <= Score < 90) -> Automated AI Voice Call Scheduled
+3. Tier 3: Major Missing Data (Score < 50 or >= 2 Major Gaps) -> Human Customer Service Escalation
 """
 
 from typing import Dict, Any, List, Tuple
@@ -48,13 +48,13 @@ def evaluate_completeness(
     
     Puanlama Kuralları:
     - Başlangıç Skoru: 100
-    - Küçük Eksikler (Minor): Her biri -5 puan (örn: tahmini saat yoksa 100 - 5 = 95)
+    - Küçük Eksikler (Minor): Her biri -10 puan (örn: tahmini saat yoksa 100 - 10 = 90)
     - Büyük Eksikler (Major / Critical): Her biri -30 puan (örn: hastane yoksa -30, poliklinik yoksa -30)
     
     3 Kademeli Yönlendirme (Triage Rules):
-    - Kademe 1 (Onaylandı): 0 eksik veri (missing_count == 0), skor = 100.
-    - Kademe 2 (Yapay Zeka Asistanı): 1 ila 4 küçük eksik (veya 1 büyük eksik). AI Bot hastayı arar.
-    - Kademe 3 (Müşteri Hizmetleri): 2 veya daha fazla büyük eksik (critical_count >= 2) veya skor < 50.
+    - Aşama 1 (Onaylandı): Skor >= 90. Küçük bir eksik varsa (örn: 90 puan) AI arama butonu da açık tutulur.
+    - Kademe 2 (Yapay Zeka Asistanı): 50 <= Skor < 90. Hedefli telefon teyidi için Yapay Zeka Sesli Botu hastayı arar.
+    - Kademe 3 (Müşteri Hizmetleri): Skor < 50 veya 2 ve daha fazla büyük eksik (critical_count >= 2).
     """
     if confirmed_overrides is None:
         confirmed_overrides = {}
@@ -87,7 +87,7 @@ def evaluate_completeness(
         if present_in_group:
             for f in present_in_group:
                 detected_fields[f] = merged_data[f]
-                score_breakdown[f] = 5
+                score_breakdown[f] = 10
         else:
             primary_field = group[0]
             if primary_field in critical_fields:
@@ -112,14 +112,14 @@ def evaluate_completeness(
             missing_fields_set.add(crit)
             score_breakdown[crit] = 0
 
-    # Evaluate minor fields (Küçük Eksikler: Her biri -5 puan)
+    # Evaluate minor fields (Küçük Eksikler: Her biri -10 puan)
     for minor in minor_fields:
         if minor in or_fields_evaluated:
             continue
         val = merged_data.get(minor)
         if _is_value_present(val):
             detected_fields[minor] = val
-            score_breakdown[minor] = 5
+            score_breakdown[minor] = 10
         else:
             minor_missing_set.add(minor)
             missing_fields_set.add(minor)
@@ -133,11 +133,11 @@ def evaluate_completeness(
         if _is_value_present(val) and extra_field not in detected_fields:
             detected_fields[extra_field] = val
             if extra_field not in score_breakdown:
-                score_breakdown[extra_field] = 5
+                score_breakdown[extra_field] = 10
 
     # Net Puanlama Hesabı:
-    # 100 - (Büyük Eksik Sayısı * 30) - (Küçük Eksik Sayısı * 5)
-    calculated_score = 100 - (len(critical_missing_set) * 30) - (len(minor_missing_set) * 5)
+    # 100 - (Büyük Eksik Sayısı * 30) - (Küçük Eksik Sayısı * 10)
+    calculated_score = 100 - (len(critical_missing_set) * 30) - (len(minor_missing_set) * 10)
     normalized_score = max(0, min(100, calculated_score))
 
     sorted_missing = sorted(list(missing_fields_set))
@@ -162,8 +162,8 @@ def evaluate_completeness(
     # 3-KADEMELİ TRIAGE YÖNLENDİRME MANTIĞI:
 
     # KADEME 3: Müşteri Hizmetleri Masası (CSR Escalation)
-    # Koşul: 2 veya daha fazla büyük eksik varsa (critical_count >= 2) VEYA skor < 50
-    if critical_count >= 2 or normalized_score < 50:
+    # Koşul: 50'nin aşağısı (< 50) VEYA 2 ve daha fazla büyük eksik (critical_count >= 2)
+    if normalized_score < 50 or critical_count >= 2:
         triage_tier = TriageTier.TIER_3_CSR_ESCALATION
         status = CompletenessStatus.CSR_ESCALATION
         is_complete = False
@@ -172,15 +172,36 @@ def evaluate_completeness(
 
         crit_names = [get_field_display_name(f) for f in sorted_critical]
         triage_reason = (
-            f"Kritik operasyonel bilgi eksikliği ({critical_count} büyük eksik: {', '.join(crit_names) if crit_names else 'yetersiz veri'}). "
+            f"Kritik operasyonel bilgi eksikliği (Skor: {normalized_score}/100, {critical_count} büyük eksik: "
+            f"{', '.join(crit_names) if crit_names else 'yetersiz veri'}). "
             "Temsilci incelemesi için Müşteri Hizmetleri Masasına sevk edildi."
         )
         follow_up_priority = FollowUpPriority.HIGH
 
+    # KADEME 1: Aşama 1: Onaylandı (Skor >= 90)
+    # Koşul: Onaylandı eşiği 90 ve üzeri. Eğer küçük bir eksik varsa (örn: 90 puan), AI arama butonu da açık tutulur.
+    elif normalized_score >= 90:
+        triage_tier = TriageTier.TIER_1_APPROVED
+        status = CompletenessStatus.APPROVED
+        is_complete = True
+        requires_csr_escalation = False
+
+        if missing_count > 0:
+            requires_ai_call = True
+            missing_names = [get_field_display_name(f) for f in sorted_missing]
+            triage_reason = (
+                f"Vaka onay eşiğini karşıladı ({normalized_score}/100). "
+                f"Tamamlanabilir küçük eksiklik ({', '.join(missing_names)}) için Yapay Zeka Sesli Arama başlatılabilir."
+            )
+            follow_up_priority = FollowUpPriority.LOW
+        else:
+            requires_ai_call = False
+            triage_reason = "Tüm operasyonel veriler eksiksiz ve doğrulanmıştır. İlgili birim iş akışına onaylandı."
+            follow_up_priority = FollowUpPriority.LOW
+
     # KADEME 2: Yapay Zeka Asistanı (AI Sesli Arama Botu Planlandı)
-    # Koşul: En az 1 eksik var (1-4 küçük eksik veya en fazla 1 büyük eksik).
-    # Otonom Yapay Zeka Asistanı hastayı telefonla arayarak eksik detayları tamamlar.
-    elif missing_count > 0:
+    # Koşul: 50 <= Skor < 90
+    else:
         triage_tier = TriageTier.TIER_2_AI_CALL
         status = CompletenessStatus.AI_CALL_SCHEDULED
         is_complete = False
@@ -189,26 +210,14 @@ def evaluate_completeness(
 
         missing_names = [get_field_display_name(f) for f in sorted_missing]
         triage_reason = (
-            f"Tamamlanabilir operasyonel eksiklik ({', '.join(missing_names)}). "
+            f"Tamamlanabilir operasyonel eksiklik ({normalized_score}/100, {', '.join(missing_names)}). "
             "Hedefli telefon teyidi için Yapay Zeka Sesli Arama Asistanına yönlendirildi."
         )
         follow_up_priority = FollowUpPriority.MEDIUM
 
-    # KADEME 1: Onaylandı / Doğrudan İş Akışına Sevk (Yeterli Veri)
-    # Koşul: Bütün operasyonel veriler eksiksiz (missing_count == 0), skor = 100.
-    else:
-        triage_tier = TriageTier.TIER_1_APPROVED
-        status = CompletenessStatus.APPROVED
-        is_complete = True
-        requires_ai_call = False
-        requires_csr_escalation = False
-        normalized_score = 100
-        triage_reason = "Tüm operasyonel veriler eksiksiz ve doğrulanmıştır. İlgili birim iş akışına onaylandı."
-        follow_up_priority = FollowUpPriority.LOW
-
     # Build why_needed explanation in Turkish
     base_desc = rule_config.get("explanation", "Kurumsal inceleme için operasyonel ayrıntılar gereklidir.")
-    if is_complete:
+    if is_complete and missing_count == 0:
         why_explanation = "Geri bildirim kaydı, ilgili poliklinik veya birimin derhal inceleme başlatması için gereken tüm operasyonel ayrıntıları eksiksiz içermektedir."
     else:
         missing_names = [get_field_display_name(f) for f in sorted_missing]

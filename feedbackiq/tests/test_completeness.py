@@ -42,7 +42,30 @@ def test_sufficient_data_reaches_tier_1_approved():
 
 
 def test_minor_gap_reaches_tier_2_ai_call():
-    """Verify that a complaint with only minor missing data is routed to Tier 2 AI Call."""
+    """Verify that a complaint with multiple minor missing data (score 80) is routed to Tier 2 AI Call."""
+    data = ExtractedFeedbackData(
+        feedback_type=FeedbackType.COMPLAINT,
+        issue_type=IssueType.WAITING_TIME,
+        sentiment=SentimentType.NEGATIVE,
+        hospital="Merkez Sehir Hastanesi",
+        department="Cardiology",
+        incident_date=None,  # Minor gap 1 (-10)
+        approximate_time=None,  # Minor gap 2 (-10) -> Score = 80
+        description_of_event="Waited for a long time past my appointment.",
+        extraction_confidence=0.88
+    )
+    result = evaluate_completeness(data)
+
+    assert result.completeness_score == 80
+    assert result.is_complete is False
+    assert result.triage_tier == TriageTier.TIER_2_AI_CALL
+    assert result.status == CompletenessStatus.AI_CALL_SCHEDULED
+    assert result.requires_ai_call is True
+    assert "approximate_time" in result.missing_fields
+
+
+def test_score_90_reaches_tier_1_approved_with_ai_call_retained():
+    """Verify that a complaint with 1 minor gap reaches Tier 1 Approved (score 90) but keeps AI call button active."""
     data = ExtractedFeedbackData(
         feedback_type=FeedbackType.COMPLAINT,
         issue_type=IssueType.WAITING_TIME,
@@ -50,15 +73,16 @@ def test_minor_gap_reaches_tier_2_ai_call():
         hospital="Merkez Sehir Hastanesi",
         department="Cardiology",
         incident_date="yesterday",
-        approximate_time=None,  # Only time is missing (minor gap)
+        approximate_time=None,  # Only time is missing (1 minor gap: -10 -> Score = 90)
         description_of_event="Waited for a long time past my appointment yesterday.",
         extraction_confidence=0.88
     )
     result = evaluate_completeness(data)
 
-    assert result.is_complete is False
-    assert result.triage_tier == TriageTier.TIER_2_AI_CALL
-    assert result.status == CompletenessStatus.AI_CALL_SCHEDULED
+    assert result.completeness_score == 90
+    assert result.is_complete is True
+    assert result.triage_tier == TriageTier.TIER_1_APPROVED
+    assert result.status == CompletenessStatus.APPROVED
     assert result.requires_ai_call is True
     assert "approximate_time" in result.missing_fields
 
