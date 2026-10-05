@@ -234,7 +234,7 @@ function renderAnalysisResult(data) {
           <div>
             <strong style="color:#334155;">${m.display_name}</strong>
             <span style="background:${m.is_critical ? '#fee2e2' : '#f1f5f9'}; color:${m.is_critical ? '#991b1b' : '#475569'}; font-size:0.68rem; font-weight:700; padding:1px 5px; border-radius:3px; margin-left:4px;">
-              ${m.is_critical ? 'BÜYÜK EKSİK (-30 Puan)' : 'KÜÇÜK EKSİK (-10 Puan)'}
+              ${m.is_critical ? 'Büyük Eksik' : 'Eksik'}
             </span>
           </div>
           <div style="color:var(--primary); font-size:0.8rem; margin-top:2px;">Önerilen Soru: "${m.suggested_question}"</div>
@@ -715,7 +715,7 @@ function renderCaseDetailWorkspace(detail) {
     const isMissing = missingSet.has(f.key) || !f.val;
     const isCrit = criticalSet.has(f.key);
     const statusTag = isMissing
-      ? `<span class="field-status-tag ${isCrit ? 'critical' : 'missing'}">${isCrit ? 'BÜYÜK EKSİK (-30 Puan)' : 'KÜÇÜK EKSİK (-10 Puan)'}</span>`
+      ? `<span class="field-status-tag ${isCrit ? 'critical' : 'missing'}">${isCrit ? 'Büyük Eksik' : 'Eksik'}</span>`
       : `<span class="field-status-tag detected">Teyitli</span>`;
 
     return `
@@ -737,7 +737,7 @@ function renderCaseDetailWorkspace(detail) {
           <div>
             <strong style="color:#334155;">${formatFieldName(m.field_name)}</strong>
             <span class="field-status-tag ${m.is_critical ? 'critical' : 'missing'}" style="margin-left:4px;">
-              ${m.is_critical ? 'BÜYÜK EKSİK (-30 Puan)' : 'KÜÇÜK EKSİK (-10 Puan)'}
+              ${m.is_critical ? 'Büyük Eksik' : 'Eksik'}
             </span>
           </div>
           <div style="color:var(--primary); font-size:0.8rem; margin-top:2px;">Önerilen İletişim Sorusu: "${getQuestionText(m.field_name)}"</div>
