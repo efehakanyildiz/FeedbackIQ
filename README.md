@@ -244,47 +244,7 @@ FeedbackIQ/
 
 ---
 
-## 7. Kurulum & Yerel Çalıştırma
-
-### Ön Gereksinimler
-- Python 3.9 veya daha yeni bir sürüm
-- Git
-- Ücretsiz Google AI Studio API Anahtarı ([aistudio.google.com](https://aistudio.google.com/) adresinden ücretsiz alınabilir, kredi kartı gerekmez)
-
-### Adım 1: Projeyi Klonlayın
-```bash
-git clone https://github.com/efehakanyildiz/FeedbackIQ.git
-cd FeedbackIQ
-```
-
-### Adım 2: Sanal Ortam Oluşturun ve Bağımlılıkları Yükleyin
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### Adım 3: Çevre Değişkenlerini Tanımlayın
-`.env.example` dosyasını `.env` olarak kopyalayın ve Gemini API anahtarınızı girin:
-```bash
-cp .env.example .env
-```
-`.env` dosyasını düzenleyin:
-```env
-GEMINI_API_KEY=AIzaSy...sizinkeyiniz...
-GEMINI_MODEL=gemini-2.5-flash
-DEMO_MODE=false
-```
-
-### Adım 4: Uygulama Sunucusunu Başlatın
-```bash
-uvicorn feedbackiq.server:app --host 127.0.0.1 --port 8000 --reload
-```
-Başlatma sonrasında tarayıcınızdan **[http://127.0.0.1:8000](http://127.0.0.1:8000)** adresine gidin. Veritabanı ve 38 örnek vaka tohum verisi otomatik olarak hazırlanacaktır.
-
----
-
-## 8. Otomasyon Test Paketi
+## 7. Otomasyon Test Paketi
 
 Proje iş kuralları ve puanlama formülleri kapsamlı testlerle korunmaktadır:
 ```bash
@@ -306,6 +266,6 @@ PYTHONPATH=. pytest feedbackiq/tests/ -v
 
 ---
 
-## 9. Lisans
+## 8. Lisans
 
 Bu proje **MIT Lisansı** altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına göz atabilirsiniz.
