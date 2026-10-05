@@ -74,8 +74,8 @@ FeedbackIQ kurumsal arayüzü; **Outfit** ve **Plus Jakarta Sans** modern tipogr
 ### Ekran 1: Hasta Deneyimi Kalite Özeti & KPI Dashboard
 Kurum genelindeki toplam vaka sayısı, ortalama kalite puanı, 3 kademeli yönlendirme dağılımı ve en çok eksik kalan parametrelerin gerçek zamanlı izlendiği ana çalışma ekranı.
 
-![Ekran 1: Dashboard ve Canlı KPI Özeti](docs/screenshots/01_dashboard_kpis.png)
-> *Görsel Konumu: `docs/screenshots/01_dashboard_kpis.png`*  
+![Ekran 1: Dashboard ve Canlı KPI Özeti](görseller/01_dashboard_kpis.png)
+> *Görsel Konumu: `görseller/01_dashboard_kpis.png`*  
 > *Bu alanda KPI kartları (Toplam Kayıt, Aşama 1: Onaylandı, Kademe 2: AI Sesli Arama, Kademe 3: Müşteri Hizmetleri, Ortalama Kalite Puanı), kademe dağılım çubukları ve eksik alan grafikleri yer almaktadır.*
 
 ---
@@ -83,8 +83,8 @@ Kurum genelindeki toplam vaka sayısı, ortalama kalite puanı, 3 kademeli yönl
 ### Ekran 2: Geri Bildirim Alımı & Deterministik Analiz Masası
 Gelen serbest metinli geri bildirimin analiz edildiği, Gemini tarafından çıkarılan operasyonel parametrelerin ve deterministik kalite skorunun incelendiği alan.
 
-![Ekran 2: Geri Bildirim Analizi ve Parametre Tespiti](docs/screenshots/02_feedback_intake_analysis.png)
-> *Görsel Konumu: `docs/screenshots/02_feedback_intake_analysis.png`*  
+![Ekran 2: Geri Bildirim Analizi ve Parametre Tespiti](görseller/02_feedback_intake_analysis.png)
+> *Görsel Konumu: `görseller/02_feedback_intake_analysis.png`*  
 > *Bu alanda 3 örnek test senaryosu butonu, serbest metin giriş formu, tespit edilen operasyonel parametreler, eksiklikler ve onay durumu görüntülenir.*
 
 ---
@@ -92,8 +92,8 @@ Gelen serbest metinli geri bildirimin analiz edildiği, Gemini tarafından çık
 ### Ekran 3: Otonom AI Sesli Arama Simülatörü & Ses Dalgası
 Küçük operasyonel eksiklikleri (ör. muayene saati veya personel unvanı) tamamlamak üzere hastayı telefonla arayan otonom yapay zeka botunun konuşma dökümü ve interaktif görüşme paneli.
 
-![Ekran 3: Otonom AI Sesli Arama Modalı](docs/screenshots/03_ai_voice_call_modal.png)
-> *Görsel Konumu: `docs/screenshots/03_ai_voice_call_modal.png`*  
+![Ekran 3: Otonom AI Sesli Arama Modalı](görseller/03_ai_voice_call_modal.png)
+> *Görsel Konumu: `görseller/03_ai_voice_call_modal.png`*  
 > *Bu alanda canlı ses dalgası animasyonu, yapay zeka asistanı ile hasta arasındaki telefon transkripti ve görüşme sonrası toplanan teyitli veriler yer alır.*
 
 ---
@@ -101,8 +101,8 @@ Küçük operasyonel eksiklikleri (ör. muayene saati veya personel unvanı) tam
 ### Ekran 4: Vaka Masası & Canlı Puan Yeniden Hesaplama
 Müşteri hizmetleri temsilcisinin telefon görüşmesi sonrasında teyit edilen şube, poliklinik ve saat bilgilerini girdiği; kaydeder kaydetmez skoru 90+ seviyesine çıkararak vakayı anında onayladığı masa.
 
-![Ekran 4: Vaka Masası ve Teyitli Veri Girişi](docs/screenshots/04_case_desk_reevaluation.png)
-> *Görsel Konumu: `docs/screenshots/04_case_desk_reevaluation.png`*  
+![Ekran 4: Vaka Masası ve Teyitli Veri Girişi](görseller/04_case_desk_reevaluation.png)
+> *Görsel Konumu: `görseller/04_case_desk_reevaluation.png`*  
 > *Bu alanda vaka detay kartı, teyitli parametreler, Büyük Eksik / Eksik etiketleri ve temsilci bilgi tamamlama formu yer almaktadır.*
 
 ---
@@ -110,8 +110,8 @@ Müşteri hizmetleri temsilcisinin telefon görüşmesi sonrasında teyit edilen
 ### Ekran 5: Kanal Bazlı Veri Kalitesi & Operasyonel Analitik
 Geri bildirimlerin geldiği kanallara (Web Sitesi, QR Kod Masası, Çağrı Merkezi, Mobil Uygulama) göre veri kalitesi ve eksiklik oranlarının karşılaştırmalı analizi.
 
-![Ekran 5: Kanal Bazlı Veri Kalitesi Analitiği](docs/screenshots/05_operational_analytics.png)
-> *Görsel Konumu: `docs/screenshots/05_operational_analytics.png`*  
+![Ekran 5: Kanal Bazlı Veri Kalitesi Analitiği](görseller/05_operational_analytics.png)
+> *Görsel Konumu: `görseller/05_operational_analytics.png`*  
 > *Bu alanda kanal kalite puanları, toplam vaka sayıları ve operasyonel dağılım çubukları sergilenmektedir.*
 
 ---
@@ -235,8 +235,7 @@ FeedbackIQ/
 │   │   ├── index.html               # 7 çalışma masalı modern HTML arayüzü
 │   │   └── styles.css               # Outfit/Plus Jakarta Sans ve #6352b9 tasarım sistemi
 │   └── server.py                    # FastAPI uygulama sunucusu ve REST rotaları
-├── docs/
-│   └── screenshots/                 # Ekran görüntüleri dizini
+├── görseller/                       # Ekran görüntüleri dizini
 ├── .env.example                     # Örnek çevre değişkenleri konfigürasyonu
 ├── LICENSE                          # MIT Açık Kaynak Lisansı
 ├── README.md                        # Detaylı proje dokümantasyonu
