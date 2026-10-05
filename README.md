@@ -1,271 +1,311 @@
-# FeedbackIQ — Müşteri Geri Bildirimlerinde Veri Kalitesi Kontrolü & Operasyonel Veri Açığını Önleme Güvenlik Katmanı
+# FeedbackIQ — AI-Powered Feedback Quality & Follow-up Layer
 
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Google GenAI SDK](https://img.shields.io/badge/Google%20GenAI-Gemini%20Flash-4285F4?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
-[![Pydantic v2](https://img.shields.io/badge/Pydantic-v2.7+-E92063?style=flat&logo=pydantic&logoColor=white)](https://pydantic.dev)
-[![Tests Passing](https://img.shields.io/badge/Tests-11%20Passed-brightgreen)](feedbackiq/tests/)
-[![Design System](https://img.shields.io/badge/Design-Plus%20Jakarta%20%7C%20Outfit%20%7C%20%236352b9-blueviolet)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+FeedbackIQ, sağlık ve kurumsal hizmet süreçlerinde serbest metin olarak gelen müşteri ve hasta geri bildirimlerinin operasyonel açıdan yeterli olup olmadığını değerlendiren, eksik bilgileri belirleyen ve tamamlanması gereken kayıtları uygun takip akışına yönlendiren AI destekli bir veri kalitesi katmanıdır.
 
-**FeedbackIQ**, sağlık ve kurumsal hizmet sektörlerinde müşteri/hasta geri bildirimlerinin **operasyonel veri kalitesini denetleyen**, **veri açıklarını (Data Deficit) önceden engelleyen** ve eksik bildirimlerin departmanlar arasında kaybolmasını önleyen kurumsal bir **Veri Kalitesi Güvenlik Katmanıdır (Data Quality Firewall)**.
+Bu proje, kurumların halihazırda kullandığı CRM, vaka yönetimi (case management) veya hasta hakları platformlarının yerini almayı hedeflemez. Aksine, ham geri bildirimlerin bu sistemlere aktarılmadan önce operasyonel veri kalitesini denetleyen, veri açığını önleyen ve eksik bildirimlerin araştırılabilir hale gelmesini sağlayan tamamlayıcı bir Proof-of-Concept (POC) katmanıdır.
+
+> **Önemli Not:** Bu proje proof-of-concept amaçlıdır. Kullanılan tüm hasta/müşteri kayıtları sentetiktir. Sistem klinik karar veya tıbbi tavsiye üretmez.
 
 ---
 
-## 1. Projenin Odaklandığı Temel Problem: "Operasyonel Veri Açığı"
+## 1. Business Problem
 
-### Çözülemeyen Geri Bildirimlerin Kaynağı
-Büyük ölçekli kurumlarda hastalar veya müşteriler web sitesi, QR formlar, çağrı merkezleri veya e-posta yoluyla her gün yüzlerce geri bildirim bırakır. Ancak bu bildirimlerin %70'inden fazlası operasyonel açıdan **araştırılamaz düzeyde eksiktir**:
+Hizmet sektöründe ve özellikle sağlık operasyonlarında, kullanıcı veya hasta tarafından iletilen bir geri bildirim kişinin kendi bakış açısıyla tamamen net olabilir; ancak operasyonel ekipler açısından araştırılabilir ve aksiyon alınabilir nitelikte olmayabilir.
 
-> *"Dün hastanenize geldim, bekleme odasında saatlerce bekletildim ve kimse ilgilenmedi. Çok mağdur oldum."*
+### Örnek Geri Bildirim:
 
-Bu mesaj samimi bir hasta şikayetidir; ancak doğrudan ilgili operasyonel birime gönderildiğinde **operasyonel kör düğüm** oluşur:
-- **Hangi şube / yerleşke?** (Belirsiz — kurumun 15 hastanesi varsa nereye yönlendirilecek?)
-- **Hangi poliklinik veya servis?** (Kardiyoloji mi, Göz mü, Acil mi?)
-- **Olay günün hangi saatinde yaşandı?** (Vardiya, randevu kuyruğu ve kamera logları taranamaz.)
-- **Hangi personel veya hekimle muhatap olundu?** (İlgili birim personeline ulaşılamaz.)
+> *"Dün hastanenize geldim, çok uzun süre bekledim ve kimse gecikmenin nedenini açıklamadı."*
 
-### Operasyonel Maliyet ve Sonuçlar
-1. **Bürokrasi ve Departmanlar Arası Paslaşma:** Şube ve birim bilgisi olmayan biletler birim yöneticileri arasında günlerce gezer.
-2. **Kapanmayan Açık Vakalar:** Yetersiz veri yüzünden hasta hakları birimi hastaya *"Konu inceleniyor"* dışında somut aksiyon veremez.
-3. **Müşteri Kaybı ve Güvensizlik:** Mağdur olan müşteri geri bildiriminin dinlenmediğini hisseder.
+Bu bildirimde bir mağduriyet açıkça ifade edilmektedir; ancak operasyonel açıdan şu kritik değişkenler eksiktir:
+
+- **Hangi hastane / şube?** (Birden fazla yerleşkesi bulunan bir kurumda şikayetin hangi lokasyona ait olduğu belirsizdir.)
+- **Hangi departman / poliklinik?** (Göz, Kardiyoloji, Acil Servis veya Kayıt Bankosu?)
+- **Yaklaşık saat?** (Günün hangi saatinde gerçekleştiği bilinmediği için randevu çizelgeleri, bekleme sıraları veya vardiya logları taranamaz.)
+- **Hizmet türü?** (Poliklinik muayenesi, radyoloji çekimi, laboratuvar tahlili veya vezne ödeme işlemi?)
+- **İlgili personel veya işlem bilgisi?** (Gerektiğinde incelenebilecek hekim, sekreter veya görevli unvanı/adı.)
+
+### Doğurduğu Operasyonel Problemler:
+
+- **Yanlış Yönlendirme:** Lokasyon ve birim bilgisi eksik olan kayıtların ilgisiz departman yöneticilerine atanması.
+- **Manuel Kontrol İhtiyacı:** Temsilcilerin her belirsiz geri bildirim için ilk incelemeyi manuel yapmak zorunda kalması.
+- **Departmanlar Arası Gereksiz Aktarım:** Birimlerin sorumluluk alanı dışındaki vakaları birbirine yönlendirmesiyle oluşan zaman kaybı.
+- **Çözüm Süresinin Uzaması:** Eksik verinin geriye dönük toplanması aşamasında şikayetin günlerce açık kalması.
+- **Düşük Kaliteli Vaka Kaydı:** Raporlama ve kök neden analizlerinde veri açığı (data deficit) nedeniyle kullanılamayan kayıtların birikmesi.
 
 ---
 
-## 2. FeedbackIQ Çözüm Yaklaşımı: Veri Kalitesi Güvenlik Duvarı
+## 2. Solution Overview
 
-FeedbackIQ, ham geri bildirimleri doğrudan operasyon yöneticilerinin kuyruğuna atmak yerine araya **sessiz, hibrit ve deterministik bir veri kalitesi katmanı** konumlandırır:
+FeedbackIQ, yapılandırılmamış metinleri doğrudan iş süreçlerine sokmak yerine deterministik doğrulamadan geçirir:
 
 ```
-[Ham Hasta Geri Bildirimi] (Web, QR Kod, Çağrı Merkezi)
-             │
-             ▼
-[1. Adım: Sessiz Yapılandırılmış Çıkarım (Google Gemini Flash)]
-Metindeki operasyonel değişkenler (Şube, Birim, Tarih, Saat, Personel, Olay) şemaya ayrıştırılır.
-             │
-             ▼
-[2. Adım: Deterministik Veri Kalitesi Puanlama Motoru (0-100 Skor)]
-Kural motoru eksikleri tartar: Büyük Eksik (-30), Küçük Eksik (-10)
-             │
-             ├────────────────────────────────────────┬────────────────────────────────────────┐
-             ▼                                        ▼                                        ▼
-      【Aşama 1: Onaylandı】                    【Kademe 2: AI Sesli Arama】             【Kademe 3: Müşteri Hizmetleri】
-      (Skor >= 90 / Tam Veri)                  (Skor 50-89 / Küçük Eksik)               (Skor < 50 veya 2+ Büyük Eksik)
-             │                                        │                                        │
-             ▼                                        ▼                                        ▼
-   [Doğrudan Birime Sevk]                    [Otonom AI Sesli Arama]                  [İnsan Temsilci Masası]
-Operasyonel inceleme derhal başlar.       Hastayı arar, eksik saati/birimi        Kritik veri eksikliği telefonla
-Eksik varsa opsiyonel AI araması yapılır.   otonom teyit edip puanı yükseltir.     tamamlanarak onaylanır.
+Unstructured Feedback (Web, QR, E-posta, Çağrı Merkezi)
+                     │
+                     ▼
+       Gemini Structured Extraction
+ (Metindeki ham değişkenleri semantik olarak ayrıştırır)
+                     │
+                     ▼
+            Pydantic Validation
+    (Veri tiplerini ve şema bütünlüğünü doğrular)
+                     │
+                     ▼
+      Deterministic Completeness Engine
+(Kategori bazlı kurallarla eksik alanları ve cezaları hesaplar)
+                     │
+                     ▼
+  Quality Score + Missing Fields + Routing Decision
+                     │
+         ┌───────────┴───────────┐
+         ▼                       ▼
+Ready for Workflow      Follow-up Required
+ (Aşama 1: Onaylandı)   (Kademe 2: AI Voice Concept /
+                         Kademe 3: Customer Service Review)
 ```
 
-### Temel Prensipler
-1. **Sıfır Halüsinasyon Riski:** Yapay zeka iş kararı vermez veya puan hesaplamaz. LLM sadece metinden değişken ayrıştırma ve sesli arama diyaloğunda kullanılır. Yönlendirme ve puanlama %100 deterministik Python kurallarıyla icra edilir.
-2. **Kullanıcıyı Bıkkınlığa İtmeyen Tasarım:** Hastanın karşısına can sıkıcı, robotik chatbotlar çıkarılmaz. Hasta şikayetini serbest metinle iletir; arka plan sistemleri veri açığını sessizce tespit eder.
-3. **Kapalı Döngü Veri Tamamlama (Closed-Loop Re-evaluation):** Eksik parametreler AI sesli arama veya müşteri temsilcisi tarafından teyit edildiği anda vaka skoru anında 90-100 seviyesine fırlar ve resmi onay alır.
+Projede geniş dil modelleri (LLM) ile kural motorlarının sınırları net biçimde ayrılmıştır. Gemini metindeki semantik anlamı yorumlayarak ham veriyi şemaya döker; yönlendirme, puanlama ve onay kararları ise deterministik iş kurallarıyla yürütülür:
+
+> *"Gemini interprets unstructured feedback, while operational decisions remain deterministic and explainable."*
 
 ---
 
-## 3. Ekran Görüntüleri & Arayüz Önizlemesi
+## 3. Core Design Principles
 
-FeedbackIQ kurumsal arayüzü; **Outfit** ve **Plus Jakarta Sans** modern tipografisi, **#6352b9** kraliyet iris moru kurumsal renk paleti ve yapay zeka sitelerindeki abartılı hilal/ay çerçevelerinden arındırılmış temiz 1px standart kenarlıkları ile donatılmıştır.
-
----
-
-### Ekran 1: Hasta Deneyimi Kalite Özeti & KPI Dashboard
-Kurum genelindeki toplam vaka sayısı, ortalama kalite puanı, 3 kademeli yönlendirme dağılımı ve en çok eksik kalan parametrelerin gerçek zamanlı izlendiği ana çalışma ekranı.
-
-![Ekran 1: Dashboard ve Canlı KPI Özeti](görseller/01_dashboard_kpis.png)
-> *Görsel Konumu: `görseller/01_dashboard_kpis.png`*  
-> *Bu alanda KPI kartları (Toplam Kayıt, Aşama 1: Onaylandı, Kademe 2: AI Sesli Arama, Kademe 3: Müşteri Hizmetleri, Ortalama Kalite Puanı), kademe dağılım çubukları ve eksik alan grafikleri yer almaktadır.*
+- **LLM is not the decision engine:** Yapay zeka iş kararı vermez; yalnızca yapılandırılmamış serbest metinden değişkenleri şemaya ayrıştırır.
+- **Missing information should remain missing:** Metinde bulunmayan bir parametre yapay zeka tarafından tahmin edilmez veya üretilmez; eksikse eksik olarak etiketlenir.
+- **Deterministic business rules control scoring and routing:** Kalite skoru, ceza ağırlıkları ve 3 kademeli yönlendirme eşikleri şeffaf, denetlenebilir Python kurallarıyla hesaplanır.
+- **Human-in-the-loop for critical missing information:** Kritik operasyonel parametrelerin eksik olduğu durumlarda karar süreci insan temsilciye (Customer Service Review) devredilir.
+- **Confirmed manual input takes precedence over AI-extracted values:** Temsilcinin veya hastanın teyit ettiği bilgiler, yapay zekanın ilk çıkarımından üstündür ve sistemde öncelik taşır.
+- **Re-evaluation closes the data quality loop:** Teyit edilen eksik bilgiler girildiği anda vaka yeniden puanlanır ve veri kalitesi döngüsü doğrulanmış olarak kapanır.
 
 ---
 
-### Ekran 2: Geri Bildirim Alımı & Deterministik Analiz Masası
-Gelen serbest metinli geri bildirimin analiz edildiği, Gemini tarafından çıkarılan operasyonel parametrelerin, 90+ kalite skorunun ve onay durumunun incelendiği alan.
+## 4. Operational Workflow
 
-![Ekran 2: Geri Bildirim Analizi ve Parametre Tespiti](görseller/02_feedback_intake_analysis.png)
-> *Görsel Konumu: `görseller/02_feedback_intake_analysis.png`*  
-> *Bu alanda serbest metin giriş formu, Gemini tarafından çıkarılan operasyonel değişkenler, 90 puan onay durumu ve kalan küçük eksiklik için AI sesli arama butonu görüntülenir.*
-
----
-
-### Ekran 3: Kademe 2 Çözümleme Hattı — Yapay Zeka Sesli Arama Kuyruğu
-Küçük operasyonel eksiklikleri (ör. muayene saati veya birim teyidi) bulunan hastaları otonom arayarak personelin vaktini koruyan sesli bot kuyruğu ve arama başlatma paneli.
-
-![Ekran 3: Yapay Zeka Sesli Arama Kuyruğu](görseller/03_ai_voice_call_modal.png)
-> *Görsel Konumu: `görseller/03_ai_voice_call_modal.png`*  
-> *Bu alanda Kademe 2'ye yönlendirilen vakalar, kalite puanları (50-60/100) ve tek tıkla otonom telefon aramasını başlatan aksiyon butonları sergilenmektedir.*
-
----
-
-### Ekran 4: Vaka Masası & Canlı Puan Yeniden Hesaplama
-Müşteri hizmetleri temsilcisinin telefon görüşmesi sonrasında teyit edilen şube, poliklinik ve saat bilgilerini girdiği; kaydeder kaydetmez skoru 90+ seviyesine çıkararak vakayı anında onayladığı masa.
-
-![Ekran 4: Vaka Masası ve Teyitli Veri Girişi](görseller/04_case_desk_reevaluation.png)
-> *Görsel Konumu: `görseller/04_case_desk_reevaluation.png`*  
-> *Bu alanda vaka detay kartı, teyitli parametreler, Büyük Eksik / Eksik etiketleri ve temsilci bilgi tamamlama formu yer almaktadır.*
-
----
-
-### Ekran 5: Kanal Bazlı Veri Kalitesi & Operasyonel Analitik
-Geri bildirimlerin geldiği kanallara (Web Sitesi, QR Kod Masası, Çağrı Merkezi, Mobil Uygulama) göre veri kalitesi ve eksiklik oranlarının karşılaştırmalı analizi.
-
-![Ekran 5: Kanal Bazlı Veri Kalitesi Analitiği](görseller/05_operational_analytics.png)
-> *Görsel Konumu: `görseller/05_operational_analytics.png`*  
-> *Bu alanda kanal kalite puanları, toplam vaka sayıları ve operasyonel dağılım çubukları sergilenmektedir.*
-
----
-
-## 4. Deterministik Veri Kalitesi Puanlama Modeli
-
-FeedbackIQ puanlama motoru, sezgisel veya rastgele değerlendirmeler yerine matematiksel ve deterministik bir ceza puanı formülü kullanır:
-
-$$\text{Kalite Skoru} = 100 - (\text{Büyük Eksik Sayısı} \times 30) - (\text{Küçük Eksik Sayısı} \times 10)$$
-
-### Eksiklik Türleri ve Ceza Ağırlıkları
-
-| Eksiklik Türü | Etiket | Ceza Puanı | Örnek Parametreler | Gerekçe |
-| :--- | :--- | :--- | :--- | :--- |
-| **Büyük Eksik** | `Büyük Eksik` | **-30 Puan** | Hastane Şubesi (`hospital`), Poliklinik / Departman (`department`), Fatura Detayı (`billing_context`) | Lokasyon veya sorumlu birim olmadan şikayetin nereye sevk edileceği bilinemez. İnceleme başlatılamaz. |
-| **Küçük Eksik** | `Eksik` | **-10 Puan** | Olay Saati (`approximate_time`), Olay Tarihi (`incident_date`), Personel Unvanı (`staff_role`) | Şube ve birim bellidir; kamera veya randevu logu için tahmini saat eksiktir. AI bot ile kolayca tamamlanabilir. |
-
-### 3 Kademeli Yönlendirme Eşikleri
+Geri bildirimler hesaplanan veri kalitesi skoruna ve eksik parametrelerin ağırlığına göre 3 kademeli operasyonel akışa tabi tutulur:
 
 ```
-100 Puan ───┬─── [Aşama 1: Onaylandı / Yeterli Veri]
-            │    * Skor >= 90
-            │    * Vaka doğrudan ilgili poliklinik yöneticisine iletilir.
-            │    * Küçük bir eksik varsa opsiyonel "Yapay Zeka Sesli Arama" butonu sunulur.
- 90 Puan ───┼────────────────────────────────────────────────────────────────
-            │    [Kademe 2: AI Sesli Arama Kuyruğu]
-            │    * 50 <= Skor < 90
-            │    * Şube bellidir, 1-2 küçük eksik vardır.
-            │    * Otonom AI sesli arama botu hastayı arayarak eksik saati tamamlar.
- 50 Puan ───┼────────────────────────────────────────────────────────────────
-            │    [Kademe 3: Müşteri Hizmetleri İnsan Temsilci Masası]
-            │    * Skor < 50 VEYA 2+ Büyük Eksik (ör. şube ve poliklinik yok)
-            │    * Yanlış birime gitmesini engellemek için doğrudan temsilciye aktarılır.
-  0 Puan ───┴───
+Kalite Skoru
+ 100 ────┬──── Tier 1: Workflow Ready (Aşama 1: Onaylandı)
+         │     * Skor >= 90
+         │     * Operasyonel bağlam yeterli, doğrudan downstream iş akışına iletilir.
+  90 ────┼────────────────────────────────────────────────────────────
+         │     Tier 2: AI Voice Follow-up Concept (Kademe 2: AI Sesli Arama)
+         │     * Skor 50–89 (Orta düzey eksiklik, örn: randevu saati belirsiz)
+         │     * Gelecek dönem entegrasyonlarını modelleyen simülasyon katmanıdır.
+  50 ────┼────────────────────────────────────────────────────────────
+         │     Tier 3: Customer Service Review (Kademe 3: Temsilci İncelemesi)
+         │     * Skor < 50 veya kritik alanlar (şube, poliklinik) eksik
+         │     * İnsan temsilci masasına yönlendirilir; hedeflenmiş takip soruları üretilir.
+   0 ────┴────────────────────────────────────────────────────────────
 ```
+
+### Tier 1 — Workflow Ready
+- Kalite skoru 90 ve üzerindedir.
+- Hastane, birim ve olay tanımı gibi temel operasyonel gereksinimler karşılanmıştır.
+- Kayıt doğrudan ilgili birim yöneticisine veya operasyonel inceleme sürecine aktarılabilir.
+
+### Tier 2 — AI Voice Follow-up Concept
+- Skor 50 ile 89 arasındadır; temel lokasyon bellidir ancak takip için gereken ikincil alanlar (örneğin randevu saati veya servis türü) eksiktir.
+- **Önemli Not:** Bu modül bir gelecek durum (future-state) konsept simülasyonudur; gerçek bir telefon araması başlatmaz. Sistem, ileride sesli yapay zeka entegrasyonu sağlandığında küçük veri eksikliklerinin insan müdahalesine gerek kalmadan nasıl otomatik tamamlanabileceğini modellemektedir.
+
+### Tier 3 — Customer Service Review
+- Skor 50'nin altındadır veya hastane şubesi gibi yönlendirmeyi imkansız kılan kritik parametreler eksiktir.
+- Vaka, müşteri hizmetleri temsilci masasına iletilir.
+- Sistem temsilciye eksik alanlara özel hedeflenmiş soru önerileri sunar.
+- Temsilci hastayla görüşerek teyit ettiği verileri form üzerinden kaydeder ve vaka anında yeniden değerlendirilir (re-evaluation).
 
 ---
 
-## 5. Sistem Mimarisi & Teknoloji Yığını
+## 5. Deterministic Completeness Scoring
+
+Puanlama motoru sezgisel veya olasılıksal tahminler yerine şeffaf ve deterministik bir ceza formülü kullanır:
+
+$$\text{Quality Score} = 100 - (\text{Major Missing Field} \times 30) - (\text{Minor Missing Field} \times 10)$$
+
+### Eşik Değerler (Thresholds):
+
+| Skor Aralığı | Kademe | Operasyonel Karar |
+| :--- | :--- | :--- |
+| **>= 90** | **Tier 1 — Workflow Ready** | İnceleme için yeterli veri mevcut; ilgili birime sevk edilir. |
+| **50 – 89** | **Tier 2 — AI Voice Follow-up Concept** | Küçük eksiklikler mevcut; konsept sesli takip kuyruğuna alınır. |
+| **< 50** veya çoklu kritik eksik | **Tier 3 — Customer Service Review** | Yönlendirme yapılamaz; insan temsilci incelemesine eskalasyon. |
+
+Kategori bazlı zorunlu alan kuralları (`WAITING_TIME`, `STAFF_BEHAVIOR`, `BILLING_PAYMENT`, `MEDICAL_CARE`, `CLEANLINESS_FACILITY`, `APPRECIATION`) ve ceza ağırlıkları `feedbackiq/config/completeness_rules.py` dosyasında açıkça tanımlanmıştır.
+
+Puanlama motoru dış bağımlılıklardan arındırılmış saf Python fonksiyonları ile çalışır; aynı girdi her zaman birebir aynı kalite skorunu ve yönlendirme kararını üretir.
+
+---
+
+## 6. Key Features
+
+- **AI-Based Structured Information Extraction:** Serbest metinli ham bildirimlerden hastane, departman, saat, tarih, personel ve vaka özetinin yapılandırılmış çıkarımı.
+- **Category-Aware Completeness Validation:** Geri bildirim kategorisine göre (bekleme süresi, fatura, personel davranışı vb.) değişen dinamik operasyonel gereksinim kontrolü.
+- **Missing-Field Detection:** Operasyonel inceleme için zorunlu olan ve metinde bulunmayan parametrelerin net tespiti.
+- **Deterministic Quality Scoring:** 100 puan üzerinden şeffaf, izlenebilir ve kural tabanlı ceza puanı hesaplaması.
+- **Targeted Follow-up Question Generation:** Yalnızca eksik kalan parametreler için temsilciye veya iletişim kanalına yönelik özel soru önerisi üretimi.
+- **Customer Service Follow-up Queue:** Kritik veri açığı bulunan vakaların temsilci masasında toplanması ve önceliklendirilmesi.
+- **Re-evaluation After Confirmed Information:** Teyit edilen manuel girdilerle vakanın anında yeniden puanlanarak operasyonel onaya kavuşturulması.
+- **Channel-Based Feedback Quality Analytics:** Web sitesi, QR kod, e-posta ve çağrı merkezi gibi kanalların ortalama veri kalitesi analitiği.
+- **Synthetic Demo Case Dataset:** Farklı eksiklik ve kalite seviyelerini temsil eden hazır sentetik test senaryoları.
+- **Test Coverage for Scoring and End-to-End Workflow:** Deterministik kuralları, öncelik mekanizmalarını ve uçtan uca akışı doğrulayan test paketi.
+
+---
+
+## 7. Screenshots
+
+### Dashboard
+![Dashboard ve KPI Özeti](görseller/01_dashboard_kpis.png)
+*Görsel: `görseller/01_dashboard_kpis.png` — Kurum genelindeki geri bildirim kalitesi, 3 kademeli dağılım, ortalama kalite skoru ve en sık eksik kalan operasyonel alanların izlendiği genel bakış ekranı.*
+
+### Intake & Analysis
+![Geri Bildirim Alımı ve Analiz Masası](görseller/02_feedback_intake_analysis.png)
+*Görsel: `görseller/02_feedback_intake_analysis.png` — Serbest metin girişi, Gemini semantik çıkarımı, tespit edilen operasyonel parametreler ve deterministik kalite puanlama sonucu.*
+
+### AI Voice Follow-up Concept
+![AI Sesli Arama Konsept Simülasyonu](görseller/03_ai_voice_call_modal.png)
+*Görsel: `görseller/03_ai_voice_call_modal.png` — Küçük veri eksikliklerinin gelecekte otonom sesli aramayla nasıl tamamlanabileceğini gösteren konsept arayüz simülasyonu (gerçek bir telefon araması başlatmaz).*
+
+### Customer Service Case Desk
+![Müşteri Hizmetleri Vaka Çözümleme Masası](görseller/04_case_desk_reevaluation.png)
+*Görsel: `görseller/04_case_desk_reevaluation.png` — Temsilcinin hasta ile görüşerek teyit ettiği verileri girdiği, eksik alanları kapattığı ve vakayı anında yeniden puanlayarak onayladığı çalışma alanı.*
+
+### Operational Analytics
+![Operasyonel Analitik ve Kanal Kalitesi](görseller/05_operational_analytics.png)
+*Görsel: `görseller/05_operational_analytics.png` — Kaynak kanallara göre veri kalitesi karşılaştırması, eksik alan sıklıkları ve vaka dağılım analitiği.*
+
+---
+
+## 8. Architecture
 
 ```mermaid
 graph TD
-    subgraph Frontend [Modern Kurumsal Web Arayüzü]
-        UI[Single Page Application - Vanilla JS]
-        Style[Outfit & Plus Jakarta Sans / #6352b9 Royal Iris]
-        NoEmoji[Sıfır Emoji - Saf SVG Vektör İkonlar]
-        CleanBorders[Düz 1px Kenarlıklar - Hilal Çerçeve İçermez]
-    end
+    UI[Web Interface - Vanilla JS / Modern CSS]
+    API[FastAPI REST API]
+    Gemini[Google Gemini Flash - Semantic Extraction]
+    Pydantic[Pydantic v2 Schema Validation]
+    RulesEngine[Deterministic Completeness Engine]
+    DB[(SQLite - feedbackiq.db)]
+    Workflow[Downstream Workflow / Case Management]
+    CSDesk[Customer Service Desk - Confirmed Input]
 
-    subgraph Backend [FastAPI Güvenlik Katmanı]
-        API[FastAPI REST Servisi]
-        CORS[CORS & Güvenlik Katmanı]
-        Router[Endpoints: /api/analyze, /api/cases, /api/reevaluate]
-    end
+    UI -->|Raw Feedback Submission| API
+    API -->|Prompt & Schema| Gemini
+    Gemini -->|Extracted JSON| Pydantic
+    Pydantic -->|Structured Data| RulesEngine
+    RulesEngine -->|Score, Missing Fields & Tier| DB
+    DB -->|Read State & KPIs| API
+    API -->|JSON Response| UI
 
-    subgraph Extraction [Yapılandırılmış Bilgi Çıkarımı]
-        Gemini[Google Gemini Flash - Structured JSON]
-        PydanticSchema[Pydantic v2 FeedbackExtraction Modeli]
-    end
-
-    subgraph QualityEngine [Deterministik Veri Kalitesi Motoru]
-        RuleEngine[Python Completeness Engine]
-        ScoreFormula[100 - Major*30 - Minor*10]
-        TriageDecision[3 Kademeli Yönlendirme Kararı]
-    end
-
-    subgraph Storage [İlişkisel Veritabanı]
-        SQLite[(SQLite feedbackiq.db)]
-        CasesTable[cases & missing_fields Tabloları]
-        HistoryTable[follow_up_history Denetim İzi]
-    end
-
-    UI --> API
-    API --> Gemini
-    Gemini --> PydanticSchema
-    PydanticSchema --> RuleEngine
-    RuleEngine --> ScoreFormula
-    ScoreFormula --> TriageDecision
-    TriageDecision --> SQLite
-    SQLite --> API
-    API --> UI
+    RulesEngine -->|Tier 1: Approved >= 90| Workflow
+    RulesEngine -->|Tier 3: Escalated < 50| CSDesk
+    CSDesk -->|Confirmed Overrides| API
+    API -->|Re-evaluate Case| RulesEngine
 ```
 
-### Teknoloji Bileşenleri
-- **Programlama Dili:** Python 3.9+
-- **API Çatısı:** FastAPI + Uvicorn (Yüksek eşzamanlılık ve asenkron işleme)
-- **Veri Doğrulama:** Pydantic v2 (Tip güvenliği ve şema garantisi)
-- **Yapay Zeka Katmanı:** Google GenAI SDK (`gemini-2.5-flash` / `gemini-1.5-flash` - Ücretsiz kota uyumlu)
-- **Veritabanı:** SQLite (Kurulumsuz, hafif ve ACID garantili ilişkisel kayıt)
-- **Frontend Mimarisi:** Vanilla JavaScript (Modern ES6+ SPA) + Modern CSS (Custom Properties, Flexbox/Grid)
-- **Tipografi:** Google Fonts Outfit & Plus Jakarta Sans
-- **Renk Paleti:** `#6352b9` (Royal Iris Purple), `#4f3ea3` (Koyu Iris), `#059669` (Başarı Yeşili), `#e11d48` (Eskalasyon Kırmızısı)
+Müşteri hizmetleri masasından girilen teyitli manuel bilgiler (`Confirmed Overrides`) tekrar deterministik kurallar motoruna aktarılır; bu sayede vaka skoru doğrulanmış verilerle güncellenerek döngü tamamlanır.
 
 ---
 
-## 6. Proje Dizin Yapısı
+## 9. Technology Stack
+
+| Katman | Teknoloji | Açıklama |
+| :--- | :--- | :--- |
+| **Backend** | Python, FastAPI, Uvicorn | Asenkron REST API servisi ve iş kuralları orkestrasyonu |
+| **AI** | Google GenAI SDK / Gemini Flash | Yapılandırılmamış metinden semantik bilgi çıkarımı |
+| **Validation** | Pydantic v2 | Katı tip denetimi ve çıkarım şeması doğrulaması |
+| **Rules Engine** | Deterministik Python Kuralları | Matematiksel ceza puanı ve 3 kademeli yönlendirme motoru |
+| **Database** | SQLite | Hafif, kurulum gerektirmeyen ilişkisel veri saklama katmanı |
+| **Frontend** | Vanilla JavaScript, HTML, CSS | Harici bağımlılıksız modern tek sayfa uygulama (SPA) |
+| **Testing** | Pytest | Birim ve entegrasyon testlerinin otomasyonu |
+
+---
+
+## 10. Repository Structure
 
 ```
 FeedbackIQ/
+├── app.py                           # Giriş noktası ve sunucu çalıştırma betiği
 ├── feedbackiq/
 │   ├── config/
-│   │   ├── completeness_rules.py    # Kategori bazlı ceza ağırlıkları ve 90/50 eşikleri
-│   │   └── hospital_data.py         # Hastane şubeleri ve poliklinik katalogları
+│   │   ├── completeness_rules.py    # Kategori kuralları, ceza puanları ve eşik değerler
+│   │   └── question_templates.py    # Eksik parametreler için soru şablonları
 │   ├── database/
-│   │   ├── db.py                    # SQLite bağlantı yöneticisi ve şema tanımları
-│   │   ├── repository.py            # Veritabanı CRUD ve analitik sorguları
-│   │   └── seed.py                  # 38 gerçekçi kurumsal geri bildirim tohum verisi
+│   │   ├── db.py                    # SQLite bağlantısı ve tablo şemaları
+│   │   ├── repository.py            # Veritabanı sorguları ve CRUD operasyonları
+│   │   └── seed.py                  # Sentetik vaka veri seti tohumlayıcısı
 │   ├── models/
-│   │   └── feedback_schemas.py      # Pydantic v2 operasyonel veri modelleri
+│   │   └── schemas.py               # Pydantic v2 veri modelleri ve enum tanımları
+│   ├── pages/                       # Sayfa bileşenleri ve rota tanımlayıcıları
 │   ├── services/
-│   │   ├── ai_call_service.py       # Otonom sesli arama diyaloğu ve transkript simülatörü
-│   │   ├── completeness_service.py  # Deterministik kalite puanlama ve triage motoru
-│   │   ├── followup_service.py      # Teyitli veri girişi ve skoru 90+ yapma servisi
-│   │   ├── gemini_service.py        # Gemini Flash sessiz yapılandırılmış çıkarım
-│   │   └── question_service.py      # Eksik alanlara özel hedeflenmiş soru üretici
+│   │   ├── ai_call_service.py       # Gelecek durum sesli arama simülasyon servisi
+│   │   ├── completeness_service.py  # Deterministik puanlama ve triage motoru
+│   │   ├── followup_service.py      # Teyitli veri girişi ve yeniden puanlama servisi
+│   │   └── gemini_service.py        # Gemini yapılandırılmış semantik çıkarım servisi
 │   ├── tests/
-│   │   ├── test_completeness.py     # 90 eşiği, ceza puanları ve triage birim testleri
-│   │   └── test_feedback_extraction.py # Uçtan uca bilgi çıkarımı ve sesli arama testleri
+│   │   ├── test_completeness.py     # Puanlama, ceza ve yönlendirme birim testleri
+│   │   └── test_feedback_extraction.py # Uçtan uca bilgi çıkarımı ve simülasyon testleri
+│   ├── utils/                       # Yardımcı fonksiyonlar ve formatlayıcılar
 │   ├── web/
-│   │   ├── app.js                   # SPA kontrolcüsü, canlı analiz ve dinamik formlar
-│   │   ├── index.html               # 7 çalışma masalı modern HTML arayüzü
-│   │   └── styles.css               # Outfit/Plus Jakarta Sans ve #6352b9 tasarım sistemi
-│   └── server.py                    # FastAPI uygulama sunucusu ve REST rotaları
-├── görseller/                       # Ekran görüntüleri dizini
-├── .env.example                     # Örnek çevre değişkenleri konfigürasyonu
+│   │   ├── app.js                   # İstemci tarafı uygulama mantığı ve API çağrıları
+│   │   ├── index.html               # Tek sayfa arayüz yapısı
+│   │   └── styles.css               # Arayüz tasarım stilleri ve bileşenleri
+│   └── server.py                    # FastAPI uygulama örneği ve API endpoint'leri
+├── görseller/                       # Dokümantasyon ekran görüntüleri
+├── .env.example                     # Çevre değişkenleri şablonu
+├── requirements.txt                 # Python kütüphane bağımlılıkları
 ├── LICENSE                          # MIT Açık Kaynak Lisansı
-├── README.md                        # Detaylı proje dokümantasyonu
-└── requirements.txt                 # Python bağımlılıkları listesi
+└── README.md                        # Proje dokümantasyonu
 ```
 
 ---
 
-## 7. Otomasyon Test Paketi
+## 11. Testing
 
-Proje iş kuralları ve puanlama formülleri kapsamlı testlerle korunmaktadır:
+Projedeki iş kuralları, ceza puanları, yönlendirme eşikleri ve uçtan uca akış Pytest ile test edilmektedir.
+
+### Testleri Çalıştırma:
+
 ```bash
 PYTHONPATH=. pytest feedbackiq/tests/ -v
 ```
 
-### Doğrulanan 11 Test Senaryosu:
-1. `test_sufficient_data_reaches_tier_1_approved`: Tam verili vakaların doğrudan 90+ puan alıp onaylanması.
-2. `test_minor_gap_reaches_tier_2_ai_call`: Tek bir küçük eksiklikle (saat eksik) 90 puana ulaşıp AI butonu sunulması veya 80 puanda Kademe 2'ye yönlendirilmesi.
-3. `test_major_gap_reaches_tier_3_csr_escalation`: Şube ve poliklinik eksik olduğunda skorun 40'a düşüp Kademe 3 Müşteri Hizmetlerine eskalasyonu.
-4. `test_appreciation_has_lighter_requirements`: Teşekkür mesajlarının hafifletilmiş kurallarla 90+ puan alması.
-5. `test_adding_followup_information_increases_score_and_resolves`: Temsilci teyidi sonrası puanın 90-100 seviyesine yükselip vakanın çözülmesi.
-6. `test_manually_confirmed_values_take_precedence`: Temsilcinin girdiği değerlerin model çıkarımının üzerine yazılması.
-7. `test_question_generator_asks_only_about_missing_fields`: Soru motorunun yalnızca eksik kalan alanlar için soru üretmesi.
-8. `test_no_duplicate_missing_fields`: Eksik alan listesinde mükerrer kayıt oluşmaması.
-9. `test_threshold_rules_consistency`: 90 onay ve 50 inceleme eşiklerinin doğrulanması.
-10. `test_core_end_to_end_scenario`: Serbest metin alımından SQLite kaydına kadar uçtan uca akış testi.
-11. `test_ai_voice_call_simulation`: Otonom sesli arama simülatörünün eksik veriyi tamamlayıp onay vermesi.
+### Kapsanan Senaryolar:
+
+- **Complete Case Validation (`test_sufficient_data_reaches_tier_1_approved`):** Gerekli tüm operasyonel parametreleri içeren vakaların doğrudan 90+ puan alarak Aşama 1 onayı alması.
+- **Minor Missing Data Routing (`test_minor_gap_reaches_tier_2_ai_call`):** Randevu saati gibi ikincil alanların eksik olması durumunda vakanın Kademe 2'ye yönlendirilmesi.
+- **Critical Missing Data Escalation (`test_major_gap_reaches_tier_3_csr_escalation`):** Hastane şubesi veya ilgili birimin eksik olduğu durumlarda ceza puanıyla vakanın Kademe 3 Müşteri Hizmetleri masasına eskalasyonu.
+- **Manual Override Precedence (`test_manually_confirmed_values_take_precedence`):** Temsilcinin telefon görüşmesi sonrası sisteme girdiği teyitli değerlerin, modelin ilk tahmininin üzerine yazılması.
+- **Targeted Missing-Field Questions (`test_question_generator_asks_only_about_missing_fields`):** Soru motorunun yalnızca eksik kalan alanlar için hedeflenmiş soru üretmesi; mevcut alanları tekrar sormaması.
+- **Score Increase After Follow-up (`test_adding_followup_information_increases_score_and_resolves`):** Eksik alanların teyit edilmesiyle vaka puanının yükselmesi ve onay durumuna geçmesi.
+- **End-to-End Workflow (`test_core_end_to_end_scenario`):** Ham metin girişinden semantik çıkarıma, veritabanı kaydına, temsilci müdahalesine ve canlı yeniden değerlendirmeye kadar tüm akışın doğrulanması.
+- **Voice Call Simulation (`test_ai_voice_call_simulation`):** Konsept sesli arama simülatörünün eksik veriyi tamamlayarak vakayı bir üst aşamaya taşımasının testi.
 
 ---
 
-## 8. Lisans
+## 12. Data Privacy & Scope
 
-Bu proje **MIT Lisansı** altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına göz atabilirsiniz.
+- **Yalnızca Sentetik Veri:** Bu projede kullanılan veya toplanan tüm vaka, hasta, hekim ve hastane bilgileri sentetiktir; gerçek kişi veya kurumlara ait veri içermez.
+- **Gerçek Hasta Kaydı İçermez:** Sistem herhangi bir elektronik sağlık kaydı (EHR/EMR) veya kişisel sağlık verisi (PHI) barındırmaz.
+- **Tıbbi Tavsiye ve Klinik Karar Üretmez:** FeedbackIQ klinik karar destek sistemi (CDSS) değildir; teşhis, tedavi veya klinik tavsiye vermez. Yalnızca idari ve operasyonel geri bildirimlerin veri eksikliklerini değerlendirir.
+- **Üretim Ortamı İddiası Bulunmamaktadır:** Bu depo bir konsept kanıtlama (POC) çalışmasıdır. Gerçek bir sağlık kuruluşunda canlı kullanıma alınması; kurumsal veri koruma politikaları (KVKK, HIPAA, GDPR), erişim yetkilendirme altyapıları, veri anonimleştirme protokolleri ve denetlenmiş kurumsal bulut güvenliği gerektirir.
+
+---
+
+## 13. Project Positioning
+
+FeedbackIQ'ın temel odak noktası geri bildirimleri basitçe duygu analiziyle sınıflandırmak veya kategorize etmek değildir. Projenin asıl çözdüğü problem; **gelen geri bildirimin operasyonel olarak araştırılabilir, doğru birime yönlendirilebilir ve aksiyon alınabilir veri kalitesine sahip olup olmadığını denetlemektir.**
+
+Bu doğrultuda FeedbackIQ, kurumların halihazırda yatırım yaptığı CRM, vaka yönetimi veya biletleme sistemlerini tekrar etmez ya da onların yerine geçmeyi amaçlamaz.
+
+Sistem, ham geri bildirimlerin kurumsal iş akışlarına girmeden önce veri açığını önleyen bir:
+
+**"AI-powered feedback data quality & follow-up layer"**
+
+olarak konumlandırılır.
+
+---
+
+## 14. License
+
+Bu proje [MIT Lisansı](LICENSE) kapsamında sunulmaktadır.
