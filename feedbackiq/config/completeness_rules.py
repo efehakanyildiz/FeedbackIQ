@@ -10,170 +10,193 @@ THRESHOLD_COMPLETE = 80
 THRESHOLD_NEEDS_REVIEW = 50
 
 # Şikayet/Bildirim Türüne Göre Ağırlık ve Kritik Alan Konfigürasyonu
+# Puanlama Modeli:
+# - Başlangıç Skoru: 100
+# - Büyük Eksikler (critical_fields): Her biri -30 puan
+# - Küçük Eksikler (minor_fields): Her biri -5 puan
+# - Triage:
+#     * 0 eksik -> Kademe 1: Onaylandı (100 Puan)
+#     * 1-4 küçük eksik veya 1 büyük eksik -> Kademe 2: Yapay Zeka Asistanı (AI Sesli Bot)
+#     * 2 veya daha fazla büyük eksik veya skor < 50 -> Kademe 3: Müşteri Hizmetleri Masası
 ISSUE_RULES_CONFIG: Dict[str, Dict[str, Any]] = {
     "Bekleme Süresi": {
+        "critical_fields": ["hospital", "department", "description_of_event"],
+        "minor_fields": ["approximate_time", "incident_date"],
         "weights": {
-            "hospital": 25,
-            "department": 25,
-            "incident_date": 15,
-            "approximate_time": 15,
-            "description_of_event": 20,
+            "hospital": 30,
+            "department": 30,
+            "description_of_event": 30,
+            "approximate_time": 5,
+            "incident_date": 5,
         },
-        "critical_fields": ["hospital", "department", "incident_date", "description_of_event"],
         "or_groups": [],
-        "explanation": "Bekleme süresi şikayetlerinde kuyruk ve randevu loglarını denetlemek için hastane şubesi, poliklinik, tarih ve yaklaşık saat bilgisi gereklidir."
+        "explanation": "Bekleme süresi şikayetlerinde kuyruk ve randevu loglarını denetlemek için hastane şubesi ve poliklinik bilgisi zorunludur."
     },
     "Personel Davranışı": {
+        "critical_fields": ["hospital", "department", "description_of_event"],
+        "minor_fields": ["approximate_time", "incident_date", "staff_role"],
         "weights": {
-            "hospital": 25,
-            "department": 20,
-            "incident_date": 15,
-            "staff_role": 15,
-            "staff_name": 5,
+            "hospital": 30,
+            "department": 30,
+            "description_of_event": 30,
             "approximate_time": 5,
-            "description_of_event": 15,
+            "incident_date": 5,
+            "staff_role": 5,
         },
-        "critical_fields": ["hospital", "department", "incident_date", "description_of_event"],
         "or_groups": [
             ("staff_role", "staff_name"),
         ],
-        "explanation": "Personel tutumu bildirimlerinde birim yöneticisinin hedefe yönelik inceleme yapabilmesi için hastane, ilgili poliklinik ve personelin unvanı/adı gereklidir."
+        "explanation": "Personel tutumu bildirimlerinde birim yöneticisinin inceleme yapabilmesi için hastane ve ilgili poliklinik zorunludur."
     },
     "Fatura & Ödeme": {
-        "weights": {
-            "hospital": 25,
-            "department": 15,
-            "incident_date": 15,
-            "billing_context": 25,
-            "description_of_event": 20,
-        },
         "critical_fields": ["hospital", "billing_context", "description_of_event"],
+        "minor_fields": ["department", "incident_date"],
+        "weights": {
+            "hospital": 30,
+            "billing_context": 30,
+            "description_of_event": 30,
+            "department": 5,
+            "incident_date": 5,
+        },
         "or_groups": [],
-        "explanation": "Ödeme ve fatura incelemelerinde muhasebe mutabakatı için ilgili hastane, işlem tarihi ve ödeme tutarsızlığı detayları zorunludur."
+        "explanation": "Ödeme ve fatura incelemelerinde muhasebe mutabakatı için hastane şubesi ve ödeme tutarsızlığı detayları zorunludur."
     },
     "Randevu Süreci": {
+        "critical_fields": ["hospital", "department", "description_of_event"],
+        "minor_fields": ["approximate_time", "incident_date"],
         "weights": {
-            "hospital": 25,
-            "department": 25,
-            "incident_date": 15,
-            "approximate_time": 15,
-            "description_of_event": 20,
+            "hospital": 30,
+            "department": 30,
+            "description_of_event": 30,
+            "approximate_time": 5,
+            "incident_date": 5,
         },
-        "critical_fields": ["hospital", "department", "incident_date", "description_of_event"],
         "or_groups": [],
-        "explanation": "Randevu aksaklıklarında HBYS kayıtlarını denetlemek için hastane, poliklinik / uzmanlık alanı ve randevu tarihi gereklidir."
+        "explanation": "Randevu aksaklıklarında HBYS kayıtlarını denetlemek için hastane şubesi ve poliklinik / uzmanlık alanı zorunludur."
     },
     "Danışma / Kayıt": {
+        "critical_fields": ["hospital", "department", "description_of_event"],
+        "minor_fields": ["approximate_time", "incident_date"],
         "weights": {
-            "hospital": 25,
-            "department": 20,
-            "incident_date": 20,
-            "approximate_time": 15,
-            "description_of_event": 20,
+            "hospital": 30,
+            "department": 30,
+            "description_of_event": 30,
+            "approximate_time": 5,
+            "incident_date": 5,
         },
-        "critical_fields": ["hospital", "incident_date", "description_of_event"],
         "or_groups": [],
-        "explanation": "Hasta kabul ve kayıt aksaklıklarında desk işlemlerini incelemek için hastane lokasyonu ve tarih bilgisi gereklidir."
+        "explanation": "Hasta kabul ve kayıt aksaklıklarında desk işlemlerini incelemek için hastane lokasyonu ve birim bilgisi zorunludur."
     },
     "Temizlik & Tesis": {
+        "critical_fields": ["hospital", "department", "description_of_event"],
+        "minor_fields": ["approximate_time", "incident_date"],
         "weights": {
             "hospital": 30,
-            "department": 25,
-            "incident_date": 15,
+            "department": 30,
             "description_of_event": 30,
+            "approximate_time": 5,
+            "incident_date": 5,
         },
-        "critical_fields": ["hospital", "department", "description_of_event"],
         "or_groups": [],
-        "explanation": "Hijyen ve teknik altyapı bildirimlerinde temizlik veya teknik ekipleri yönlendirmek için tam hastane ve birim/kat lokasyonu gereklidir."
+        "explanation": "Hijyen ve teknik altyapı bildirimlerinde temizlik ekiplerini yönlendirmek için tam hastane ve birim/kat bilgisi zorunludur."
     },
     "Tıbbi Hizmet Süreci": {
-        "weights": {
-            "hospital": 25,
-            "department": 25,
-            "incident_date": 15,
-            "service_type": 15,
-            "description_of_event": 20,
-        },
-        "critical_fields": ["hospital", "department", "incident_date", "description_of_event"],
-        "or_groups": [],
-        "explanation": "Klinik süreç geri bildirimlerinde kalite direktörlüğü incelemesi için hastane, poliklinik ve tetkik bilgisi gereklidir."
-    },
-    "İletişim & Bilgilendirme": {
-        "weights": {
-            "hospital": 25,
-            "department": 25,
-            "incident_date": 20,
-            "description_of_event": 30,
-        },
         "critical_fields": ["hospital", "department", "description_of_event"],
-        "or_groups": [],
-        "explanation": "İletişim eksikliklerinde hasta bilgilendirme süreçlerini netleştirmek için hastane ve birim bağlamı gereklidir."
-    },
-    "Teknik Aksaklık": {
-        "weights": {
-            "hospital": 25,
-            "department": 20,
-            "incident_date": 20,
-            "description_of_event": 35,
-        },
-        "critical_fields": ["hospital", "description_of_event"],
-        "or_groups": [],
-        "explanation": "Sistem arızalarında arızalanan cihaz veya yazılımın (portal, vezne POS, sıramatik) açıkça tanımlanması gereklidir."
-    },
-    "Yemek & İkram": {
+        "minor_fields": ["incident_date", "approximate_time", "staff_role"],
         "weights": {
             "hospital": 30,
-            "department": 20,
-            "incident_date": 20,
+            "department": 30,
             "description_of_event": 30,
+            "incident_date": 5,
+            "approximate_time": 5,
+            "staff_role": 5,
         },
+        "or_groups": [
+            ("staff_role", "staff_name"),
+        ],
+        "explanation": "Klinik süreç geri bildirimlerinde kalite direktörlüğü incelemesi için hastane ve poliklinik bilgisi zorunludur."
+    },
+    "İletişim & Bilgilendirme": {
+        "critical_fields": ["hospital", "department", "description_of_event"],
+        "minor_fields": ["approximate_time", "incident_date"],
+        "weights": {
+            "hospital": 30,
+            "department": 30,
+            "description_of_event": 30,
+            "approximate_time": 5,
+            "incident_date": 5,
+        },
+        "or_groups": [],
+        "explanation": "İletişim eksikliklerinde hasta bilgilendirme süreçlerini netleştirmek için hastane ve birim bağlamı zorunludur."
+    },
+    "Teknik Aksaklık": {
         "critical_fields": ["hospital", "description_of_event"],
+        "minor_fields": ["department", "incident_date"],
+        "weights": {
+            "hospital": 30,
+            "description_of_event": 30,
+            "department": 5,
+            "incident_date": 5,
+        },
+        "or_groups": [],
+        "explanation": "Sistem arızalarında arızalanan cihaz veya yazılımın açıkça tanımlanması gereklidir."
+    },
+    "Yemek & İkram": {
+        "critical_fields": ["hospital", "description_of_event"],
+        "minor_fields": ["department", "incident_date"],
+        "weights": {
+            "hospital": 30,
+            "description_of_event": 30,
+            "department": 5,
+            "incident_date": 5,
+        },
         "or_groups": [],
         "explanation": "Yemek ve ikram bildirimlerinde dağıtım servisini denetlemek için hastane ve servis katı bilgisi gereklidir."
     },
     "Otopark & Ulaşım": {
-        "weights": {
-            "hospital": 40,
-            "incident_date": 20,
-            "description_of_event": 40,
-        },
         "critical_fields": ["hospital", "description_of_event"],
+        "minor_fields": ["incident_date"],
+        "weights": {
+            "hospital": 30,
+            "description_of_event": 30,
+            "incident_date": 5,
+        },
         "or_groups": [],
         "explanation": "Otopark bildirimlerinde yerleşke ve otopark alanı tanımı gereklidir."
     },
     "Teşekkür & Memnuniyet": {
-        "weights": {
-            "hospital": 25,
-            "department": 25,
-            "staff_role": 15,
-            "staff_name": 15,
-            "description_of_event": 20,
-        },
         "critical_fields": ["description_of_event"],
+        "minor_fields": ["hospital", "department"],
+        "weights": {
+            "description_of_event": 30,
+            "hospital": 5,
+            "department": 5,
+        },
         "or_groups": [
             ("hospital", "department"),
         ],
         "explanation": "Memnuniyet bildirimlerinde hastane veya birim bilgisinin bulunması tebrik iletimi için yeterlidir."
     },
     "Genel Öneri": {
-        "weights": {
-            "hospital": 20,
-            "department": 20,
-            "description_of_event": 40,
-            "service_type": 20,
-        },
         "critical_fields": ["description_of_event"],
+        "minor_fields": ["hospital", "department"],
+        "weights": {
+            "description_of_event": 30,
+            "hospital": 5,
+            "department": 5,
+        },
         "or_groups": [],
         "explanation": "Öneri kayıtlarında uygulanabilir operasyonel fikir ve bağlamın açıklanması gereklidir."
     },
     "Diğer": {
+        "critical_fields": ["hospital", "description_of_event"],
+        "minor_fields": ["department", "incident_date"],
         "weights": {
-            "hospital": 25,
-            "department": 20,
-            "incident_date": 20,
-            "description_of_event": 35,
+            "hospital": 30,
+            "description_of_event": 30,
+            "department": 5,
+            "incident_date": 5,
         },
-        "critical_fields": ["description_of_event"],
         "or_groups": [],
         "explanation": "Kategorize edilmemiş geri bildirimlerde ön inceleme için yeterli açıklama ve bağlam gereklidir."
     }

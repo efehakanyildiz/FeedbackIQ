@@ -336,16 +336,16 @@
             <span class="card-title">3 Kademeli Triage Kuralı</span>
           </div>
           <div class="arch-tier-box tier-box-1">
-            <div class="arch-tier-title">Kademe 1: Onaylandı (Yeterli Veri)</div>
-            <div class="arch-tier-desc">Skor &ge; 80 ve kritik alan eksiği yok. Vaka doğrudan ilgili poliklinik veya departman yöneticisinin kuyruğuna aktarılır.</div>
+            <div class="arch-tier-title">Kademe 1: Onaylandı (100 Puan / Eksiksiz Veri)</div>
+            <div class="arch-tier-desc">Hiçbir operasyonel alan eksik değildir (0 eksik). Vaka doğrudan ilgili poliklinik veya departman yöneticisinin kuyruğuna aktarılır.</div>
           </div>
           <div class="arch-tier-box tier-box-2">
-            <div class="arch-tier-title">Kademe 2: AI Sesli Arama (Biraz Eksik Veri)</div>
-            <div class="arch-tier-desc">Sadece 1-2 operasyonel detay (saat, poliklinik vb.) eksikse otonom yapay zeka sesli botu hastayı arar, eksiği alır ve onaylar.</div>
+            <div class="arch-tier-title">Kademe 2: AI Sesli Arama (1-4 Küçük Eksik veya 1 Büyük Eksik)</div>
+            <div class="arch-tier-desc">Küçük eksikler 5 puan düşürür (örn. yalnızca saat eksikse 95 puan). 1-4 küçük eksik veya 1 büyük eksikte Yapay Zeka Sesli Arama Botu hastayı arayarak eksik detayları telefonla tamamlar.</div>
           </div>
           <div class="arch-tier-box tier-box-3">
-            <div class="arch-tier-title">Kademe 3: Müşteri Hizmetleri (Çok Eksik Veri)</div>
-            <div class="arch-tier-desc">Hastane adı belirsiz veya birden fazla kritik bilgi eksikse insan temsilciye eskalasyon yapılır.</div>
+            <div class="arch-tier-title">Kademe 3: Müşteri Hizmetleri (&ge;2 Büyük Eksik veya &lt;50 Puan)</div>
+            <div class="arch-tier-desc">Büyük eksikler 30 puan düşürür. 2 veya daha fazla büyük eksik varsa (ör. hem hastane şubesi hem poliklinik belirsizse) insan müşteri hizmetleri temsilcisine eskalasyon yapılır.</div>
           </div>
         </div>
       </div>
