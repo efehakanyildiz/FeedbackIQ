@@ -81,20 +81,20 @@ Kurum genelindeki toplam vaka sayısı, ortalama kalite puanı, 3 kademeli yönl
 ---
 
 ### Ekran 2: Geri Bildirim Alımı & Deterministik Analiz Masası
-Gelen serbest metinli geri bildirimin analiz edildiği, Gemini tarafından çıkarılan operasyonel parametrelerin ve deterministik kalite skorunun incelendiği alan.
+Gelen serbest metinli geri bildirimin analiz edildiği, Gemini tarafından çıkarılan operasyonel parametrelerin, 90+ kalite skorunun ve onay durumunun incelendiği alan.
 
 ![Ekran 2: Geri Bildirim Analizi ve Parametre Tespiti](görseller/02_feedback_intake_analysis.png)
 > *Görsel Konumu: `görseller/02_feedback_intake_analysis.png`*  
-> *Bu alanda 3 örnek test senaryosu butonu, serbest metin giriş formu, tespit edilen operasyonel parametreler, eksiklikler ve onay durumu görüntülenir.*
+> *Bu alanda serbest metin giriş formu, Gemini tarafından çıkarılan operasyonel değişkenler, 90 puan onay durumu ve kalan küçük eksiklik için AI sesli arama butonu görüntülenir.*
 
 ---
 
-### Ekran 3: Otonom AI Sesli Arama Simülatörü & Ses Dalgası
-Küçük operasyonel eksiklikleri (ör. muayene saati veya personel unvanı) tamamlamak üzere hastayı telefonla arayan otonom yapay zeka botunun konuşma dökümü ve interaktif görüşme paneli.
+### Ekran 3: Kademe 2 Çözümleme Hattı — Yapay Zeka Sesli Arama Kuyruğu
+Küçük operasyonel eksiklikleri (ör. muayene saati veya birim teyidi) bulunan hastaları otonom arayarak personelin vaktini koruyan sesli bot kuyruğu ve arama başlatma paneli.
 
-![Ekran 3: Otonom AI Sesli Arama Modalı](görseller/03_ai_voice_call_modal.png)
+![Ekran 3: Yapay Zeka Sesli Arama Kuyruğu](görseller/03_ai_voice_call_modal.png)
 > *Görsel Konumu: `görseller/03_ai_voice_call_modal.png`*  
-> *Bu alanda canlı ses dalgası animasyonu, yapay zeka asistanı ile hasta arasındaki telefon transkripti ve görüşme sonrası toplanan teyitli veriler yer alır.*
+> *Bu alanda Kademe 2'ye yönlendirilen vakalar, kalite puanları (50-60/100) ve tek tıkla otonom telefon aramasını başlatan aksiyon butonları sergilenmektedir.*
 
 ---
 
